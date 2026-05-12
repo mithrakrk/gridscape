@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TrajectorySolver } from './TrajectorySolver';
 
 export class SceneManager {
   constructor(container) {
@@ -132,28 +133,10 @@ export class SceneManager {
       opacity: 0.8
     });
 
-    const points = [];
-    points.push(new THREE.Vector3(0, -5, 48)); // Turret muzzle
+    const startPoint = new THREE.Vector3(0, -5, 48); // Turret muzzle
     
-    // Evaluate formula with some dummy coordinates just for the MVP visual feedback
-    let impactX = 0;
-    let impactY = 0;
-    
-    try {
-      // Pass 10 to any variables present to get a simple coordinate offset
-      const scope = { x: 10, y: 10, z: 10 };
-      const result = analysis.compiled.evaluate(scope);
-      
-      // Map the numerical result to a grid position on the back wall (z = -50)
-      if (typeof result === 'number' && !isNaN(result)) {
-        impactX = (result % 100) - 50; // Keep it within -50 to 50
-        impactY = ((result * 2) % 100) - 50; 
-      }
-    } catch(e) {
-      console.warn("Formula evaluation error:", e);
-    }
-
-    points.push(new THREE.Vector3(impactX, impactY, -50));
+    // Use the iterative physics solver to trace the exact curve
+    const points = TrajectorySolver.calculate(analysis, startPoint, -50);
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     this.trajectoryLine = new THREE.Line(geometry, material);
