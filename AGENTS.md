@@ -19,6 +19,13 @@ Build this project in small, testable increments with persistent markdown docume
 - Follow the established design patterns and conventions of the project.
 - Ensure all tests pass before considering a task complete.
 
+## Testing Rules
+- Store executable automated tests in `tests/`.
+- Store manual test scenarios and acceptance criteria in `docs/test-cases.md`.
+- Add or update tests for every meaningful logic change.
+- Run relevant tests after implementing parser, trajectory, coverage, obstacle, or level-generation changes.
+- A feature is not done until both code and tests are updated.
+
 ## Definition of Done
 A task is only done when:
 - implementation is complete

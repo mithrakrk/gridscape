@@ -1,10 +1,11 @@
 # Context Handoff
 
 ## Current Context
-- **Last Action Taken**: Established full project documentation and architecture for Gridscape.
+- **Last Action Taken**: Completed Milestone 1. Initialized Vite+React app and scaffolded basic Three.js scene (cube, grid, turret).
 - **Current Blockers**: None.
-- **Open Questions**: Which UI framework (React vs Vanilla) should be used alongside Three.js?
+- **Open Questions**: How should we represent the formulas entered by the user visually before parsing? 
 
 ## Next Steps
-- Initialize the actual codebase (e.g., using Vite).
-- Begin Milestone 1: Setting up the Three.js cube scene and rendering the turret.
+- Begin Milestone 2: Formula Engine & Trajectory Solver.
+- Build the Fire Mode UI component (input box and buttons) in React.
+- Integrate `math.js` to parse formulas.
