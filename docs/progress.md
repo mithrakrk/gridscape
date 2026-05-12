@@ -1,9 +1,11 @@
 # Project Progress
 
 ## Current Status
-- Vite + React frontend initialized.
-- Three.js scene manager created with basic cube, target wall grid, and turret.
-- **Next immediate step**: Connect `math.js` to parse player input and trace trajectories (Milestone 2).
+- Vite + React frontend running with museum aesthetic.
+- `FormulaEngine` integrated to parse player math input and extract variables/degrees using `math.js`.
+- `FireModeUI` implemented to overlay the 3D scene.
+- Basic trajectory preview lines are drawing from the turret to the target wall.
+- **Next immediate step**: Implement the iterative 3D trajectory solver and map exact impact coordinates to the paint grid.
 
 ## Milestones
 - [x] Project Setup & Documentation

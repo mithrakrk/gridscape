@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { SceneManager } from '../game/SceneManager';
 
-export function GameCanvas() {
+export const GameCanvas = forwardRef((props, ref) => {
   const containerRef = useRef(null);
   const sceneManagerRef = useRef(null);
 
@@ -18,5 +18,13 @@ export function GameCanvas() {
     };
   }, []);
 
+  useImperativeHandle(ref, () => ({
+    previewTrajectory: (analysis) => {
+      if (sceneManagerRef.current) {
+        sceneManagerRef.current.drawTrajectory(analysis);
+      }
+    }
+  }));
+
   return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
-}
+});
