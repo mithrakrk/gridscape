@@ -28,6 +28,9 @@ export class SceneManager {
     this.setupControls();
 
     this.mode = 'fire'; // 'fire' or 'explore'
+    this.currentLevel = null;
+    this.obstaclesGroup = new THREE.Group();
+    this.scene.add(this.obstaclesGroup);
 
     this.animate = this.animate.bind(this);
     this.renderer.setAnimationLoop(this.animate);
@@ -173,6 +176,35 @@ export class SceneManager {
     }
   }
 
+  loadLevel(levelData) {
+    this.currentLevel = levelData;
+    
+    // Clear old obstacles
+    this.obstaclesGroup.clear();
+    
+    // Clear old paint tiles
+    if (this.paintGroup) {
+      this.paintGroup.children.forEach(child => {
+        child.geometry.dispose();
+      });
+      this.paintGroup.clear();
+    }
+    
+    if (this.trajectoryLine) {
+      this.scene.remove(this.trajectoryLine);
+      this.trajectoryLine = null;
+    }
+
+    const obsMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.7, metalness: 0.2 });
+
+    levelData.obstacles.forEach(obs => {
+      const geo = new THREE.BoxGeometry(obs.w, obs.h, obs.d);
+      const mesh = new THREE.Mesh(geo, obsMat);
+      mesh.position.set(obs.x, obs.y, obs.z);
+      this.obstaclesGroup.add(mesh);
+    });
+  }
+
   animateBullet(points, onUpdate, onComplete) {
     if (this.bullet) {
       this.scene.remove(this.bullet);
@@ -242,7 +274,8 @@ export class SceneManager {
     const startPoint = new THREE.Vector3(0, -5, 48); // Turret muzzle
     
     // Use the iterative physics solver to trace the exact curve
-    const points = TrajectorySolver.calculate(analysis, startPoint, -50);
+    const obstacles = this.currentLevel ? this.currentLevel.obstacles : [];
+    const points = TrajectorySolver.calculate(analysis, startPoint, -50, obstacles);
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     this.trajectoryLine = new THREE.Line(geometry, material);

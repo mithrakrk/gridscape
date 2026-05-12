@@ -30,6 +30,11 @@ export const GameCanvas = forwardRef((props, ref) => {
         sceneManagerRef.current.animateBullet(points, onUpdate, onComplete);
       }
     },
+    loadLevel: (levelData) => {
+      if (sceneManagerRef.current) {
+        sceneManagerRef.current.loadLevel(levelData);
+      }
+    },
     setMode: (mode) => {
       if (sceneManagerRef.current) {
         sceneManagerRef.current.setMode(mode);

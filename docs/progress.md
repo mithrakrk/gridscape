@@ -1,10 +1,11 @@
 # Project Progress
 
 ## Current Status
-- Explore Mode fully functional with WASD/QE controls and bounding box constraints.
-- Top toggle UI allows seamless swapping between shooting mechanics and flying exploration.
-- Live camera coordinates track correctly during exploration to help the user learn the 3D space.
-- **Next immediate step**: Review and polish MVP features, and prepare for Level Progression (Milestone 5).
+- **MVP Completed**.
+- Level Progression system implemented with `LevelManager.js` containing 4 distinct levels with varying coverage thresholds and obstacle layouts.
+- Obstacles render dynamically as 3D blocks in the scene.
+- `TrajectorySolver` now correctly computes AABB collisions against obstacles, stopping trajectories mid-air.
+- "Level Complete" overlay integrated for transitioning between levels.
 
 ## Milestones
 - [x] Project Setup & Documentation
@@ -12,4 +13,4 @@
 - [x] Milestone 2: Formula Engine & Trajectory Solver
 - [x] Milestone 3: Grid, Paint Coverage & Artwork Reveal
 - [x] Milestone 4: Explore Mode & UI Polish
-- [ ] Milestone 5: Level Progression & Obstacles (MVP Complete)
+- [x] Milestone 5: Level Progression & Obstacles (MVP Complete)

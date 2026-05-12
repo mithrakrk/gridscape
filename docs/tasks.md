@@ -4,13 +4,15 @@
 Current sprint focus: Setting up the web application skeleton and the Three.js basic scene.
 
 ## To Do
-- [ ] Implement level progression data.
-- [ ] Add obstacles inside the room for higher levels.
+- [ ] Add sound effects and background music.
+- [ ] Refine the visual effects for when a bullet hits an obstacle.
 
 ## In Progress
 - [ ] Review UI and code architecture for final MVP polish.
 
 ## Done
+- [x] Implement level progression data.
+- [x] Add obstacles inside the room for higher levels.
 - [x] Build Explore Mode camera controls (arrow keys or WASD).
 - [x] Create live coordinate list UI for Explore Mode.
 - [x] Implement UI toggle between Fire Mode and Explore Mode.

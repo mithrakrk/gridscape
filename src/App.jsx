@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { GameCanvas } from './components/GameCanvas';
 import { FireModeUI } from './components/FireModeUI';
 import { GridManager } from './game/GridManager';
+import { LEVELS } from './game/LevelManager';
 
 function App() {
   const canvasRef = useRef(null);
@@ -10,6 +11,23 @@ function App() {
   const [liveCoords, setLiveCoords] = useState(null);
   const [isFiring, setIsFiring] = useState(false);
   const [mode, setMode] = useState('fire'); // 'fire' or 'explore'
+  
+  const [currentLevelIdx, setCurrentLevelIdx] = useState(0);
+  const currentLevel = LEVELS[currentLevelIdx];
+  const [showLevelComplete, setShowLevelComplete] = useState(false);
+
+  React.useEffect(() => {
+    // When the canvas is ready, load the level
+    // Wait a tick to ensure SceneManager is instantiated
+    setTimeout(() => {
+      if (canvasRef.current) {
+        canvasRef.current.loadLevel(currentLevel);
+      }
+    }, 100);
+    gridRef.current = new GridManager(9);
+    setCoverage(0);
+    setShowLevelComplete(false);
+  }, [currentLevelIdx]);
 
   const handlePreview = (analysis) => {
     if (canvasRef.current) {
@@ -34,8 +52,15 @@ function App() {
               const newCells = gridRef.current.splatter(impact.x, impact.y, analysis.degree);
               if (newCells.length > 0) {
                 canvasRef.current.paintCells(newCells, gridRef.current.size);
-                setCoverage(gridRef.current.getCoverage());
+                const newCov = gridRef.current.getCoverage();
+                setCoverage(newCov);
+                if (newCov >= currentLevel.coverageThreshold) {
+                  setShowLevelComplete(true);
+                }
               }
+            } else {
+              // Hit an obstacle, it just shatters!
+              // For MVP, we just do nothing and let the user visually see it hit the obstacle.
             }
           }
         );
@@ -84,13 +109,14 @@ function App() {
         border: '1px solid #ccc',
         boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
       }}>
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', color: '#00ccff' }}>Gridscape</h1>
-        <p style={{ margin: '0 0 5px 0', color: '#666' }}>Milestone 3: Grid & Splatter</p>
+        <h1 style={{ margin: '0 0 5px 0', fontSize: '24px', color: '#00ccff' }}>Gridscape</h1>
+        <p style={{ margin: '0 0 10px 0', color: '#444', fontWeight: 'bold' }}>{currentLevel.name}</p>
         <div style={{ background: '#eee', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
           <div style={{ width: `${coverage * 100}%`, background: '#00ccff', height: '100%', transition: 'width 0.3s' }} />
         </div>
-        <div style={{ fontSize: '12px', marginTop: '4px', textAlign: 'right', fontWeight: 'bold' }}>
-          {Math.round(coverage * 100)}% Revealed
+        <div style={{ fontSize: '12px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+          <span>{Math.round(coverage * 100)}% Revealed</span>
+          <span style={{ color: '#cc0000' }}>Target: {Math.round(currentLevel.coverageThreshold * 100)}%</span>
         </div>
       </div>
       
@@ -136,6 +162,31 @@ function App() {
       )}
 
       {mode === 'fire' && <FireModeUI onPreview={handlePreview} onFire={handleFire} isFiring={isFiring} />}
+
+      {/* Level Complete Overlay */}
+      {showLevelComplete && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', zIndex: 100
+        }}>
+          <h1 style={{ color: '#00ccff', fontSize: '56px', marginBottom: '20px', textShadow: '0 0 20px #00ccff' }}>Masterpiece Revealed!</h1>
+          <p style={{ color: '#fff', fontSize: '24px', marginBottom: '40px' }}>You successfully cleared {currentLevel.name}</p>
+          {currentLevelIdx < LEVELS.length - 1 ? (
+            <button 
+              onClick={() => setCurrentLevelIdx(prev => prev + 1)}
+              style={{ padding: '20px 40px', fontSize: '28px', background: '#00ccff', color: '#000', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 15px #00ccff' }}
+            >
+              Start Next Level
+            </button>
+          ) : (
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ color: '#00ffcc', fontSize: '32px' }}>Congratulations!</h2>
+              <p style={{ color: '#aaa', fontSize: '18px' }}>You have completed all levels and the MVP!</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,10 +1,10 @@
 # Context Handoff
 
 ## Current Context
-- **Last Action Taken**: Completed Milestone 4. Built Explore Mode with WASD/QE controls, live camera coordinate HUD, and a top UI toggle to switch between Fire and Explore modes smoothly.
+- **Last Action Taken**: Completed Milestone 5. Implemented `LevelManager.js` with 4 levels, added dynamic 3D obstacle rendering, wired AABB collision detection into the `TrajectorySolver`, and added a Level Complete UI. The MVP is fully functional!
 - **Current Blockers**: None.
-- **Open Questions**: Are the flying speeds and bounds appropriate? Should the player collide with the turret in Explore mode?
+- **Open Questions**: Do the obstacle hitboxes feel accurate? Does the user want to add visual explosion effects for obstacle hits?
 
 ## Next Steps
-- Implement Level Progression (Milestone 5).
-- Add obstacles inside the room that block trajectories to increase puzzle difficulty.
+- Review the entire MVP.
+- Consider adding audio, particle effects on obstacle hits, and more complex levels.

@@ -6,9 +6,10 @@ export class TrajectorySolver {
    * @param {Object} analysis - The compiled math.js result from FormulaEngine
    * @param {THREE.Vector3} start - The origin point (turret)
    * @param {number} targetZ - The z-coordinate of the target wall
+   * @param {Array} obstacles - Array of obstacle bounding boxes
    * @returns {THREE.Vector3[]} Array of points defining the trajectory curve
    */
-  static calculate(analysis, start, targetZ) {
+  static calculate(analysis, start, targetZ, obstacles = []) {
     const points = [];
     const steps = 400; // Increased resolution for smoother curve and slower animation
     const zDistance = start.z - targetZ;
@@ -78,6 +79,21 @@ export class TrajectorySolver {
       const finalY = pingPong(rawY, -50, 50);
 
       points.push(new THREE.Vector3(finalX, finalY, currentZ));
+
+      // Check for collisions with obstacles
+      let hitObstacle = false;
+      for (const obs of obstacles) {
+        if (Math.abs(finalX - obs.x) <= obs.w / 2 &&
+            Math.abs(finalY - obs.y) <= obs.h / 2 &&
+            Math.abs(currentZ - obs.z) <= obs.d / 2) {
+          hitObstacle = true;
+          break;
+        }
+      }
+
+      if (hitObstacle) {
+        break;
+      }
     }
     
     return points;
