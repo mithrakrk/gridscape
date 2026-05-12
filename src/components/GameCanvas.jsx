@@ -12,7 +12,9 @@ export const GameCanvas = forwardRef((props, ref) => {
 
     return () => {
       if (sceneManagerRef.current) {
-        sceneManagerRef.current.destroy();
+        if (typeof sceneManagerRef.current.destroy === 'function') {
+          sceneManagerRef.current.destroy();
+        }
         sceneManagerRef.current = null;
       }
     };

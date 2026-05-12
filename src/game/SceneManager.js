@@ -119,6 +119,28 @@ export class SceneManager {
     this.scene.add(this.paintGroup);
   }
 
+  addWallLabel(text, x, y, z, rotX, rotY, rotZ) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = 'bold 60px sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+    const geo = new THREE.PlaneGeometry(40, 10);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, y, z);
+    mesh.rotation.set(rotX, rotY, rotZ);
+    this.scene.add(mesh);
+  }
+
   setupTurret() {
     this.turret = new THREE.Group();
     
@@ -412,7 +434,7 @@ export class SceneManager {
   }
 
   updateExploreCamera() {
-    const speed = 1.0;
+    const speed = this.keys.shift ? 4.0 : 1.0;
     if (this.keys.w || this.keys.arrowup) this.camera.position.z -= speed;
     if (this.keys.s || this.keys.arrowdown) this.camera.position.z += speed;
     if (this.keys.a || this.keys.arrowleft) this.camera.position.x -= speed;
@@ -424,6 +446,20 @@ export class SceneManager {
     this.camera.position.x = Math.max(-49, Math.min(49, this.camera.position.x));
     this.camera.position.y = Math.max(-49, Math.min(49, this.camera.position.y));
     this.camera.position.z = Math.max(-49, Math.min(49, this.camera.position.z));
+  }
+
+  getRaycastCell() {
+    if (this.mode !== 'explore') return null;
+    this.raycaster.setFromCamera(this.centerCoord, this.camera);
+    // Find intersection with the back wall (z = -50)
+    const wallPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 50);
+    const target = new THREE.Vector3();
+    if (this.raycaster.ray.intersectPlane(wallPlane, target)) {
+      if (target.x >= -50 && target.x <= 50 && target.y >= -50 && target.y <= 50) {
+        return target;
+      }
+    }
+    return null;
   }
 
   destroy() {
