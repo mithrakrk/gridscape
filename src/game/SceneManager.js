@@ -81,6 +81,16 @@ export class SceneManager {
     gridHelper.rotation.x = Math.PI / 2;
     gridHelper.position.z = -49.9;
     this.scene.add(gridHelper);
+
+    // Setup the artwork texture mapping but hide it initially
+    const textureLoader = new THREE.TextureLoader();
+    this.artworkTexture = textureLoader.load('/artwork.png');
+    this.artworkTexture.colorSpace = THREE.SRGBColorSpace;
+    
+    // Group to hold all painted tiles
+    this.paintGroup = new THREE.Group();
+    this.paintGroup.position.z = -49.8; // slightly in front of back wall and grid
+    this.scene.add(this.paintGroup);
   }
 
   setupTurret() {
@@ -141,6 +151,42 @@ export class SceneManager {
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     this.trajectoryLine = new THREE.Line(geometry, material);
     this.scene.add(this.trajectoryLine);
+    
+    return points;
+  }
+
+  addPaintCells(cells, gridSize) {
+    const cellSize = 100 / gridSize;
+    
+    // Use a single basic material that ignores lights for the artwork to pop perfectly
+    if (!this.paintMaterial) {
+      this.paintMaterial = new THREE.MeshBasicMaterial({ 
+        map: this.artworkTexture,
+        side: THREE.DoubleSide
+      });
+    }
+
+    cells.forEach(cell => {
+      const geo = new THREE.PlaneGeometry(cellSize, cellSize);
+      
+      const u = cell.c / gridSize;
+      const v = cell.r / gridSize;
+      const uSize = 1 / gridSize;
+      const vSize = 1 / gridSize;
+      
+      // Top-left, top-right, bottom-left, bottom-right UVs
+      geo.attributes.uv.setXY(0, u, v + vSize);
+      geo.attributes.uv.setXY(1, u + uSize, v + vSize);
+      geo.attributes.uv.setXY(2, u, v);
+      geo.attributes.uv.setXY(3, u + uSize, v);
+      geo.attributes.uv.needsUpdate = true;
+
+      const tile = new THREE.Mesh(geo, this.paintMaterial);
+      tile.position.x = -50 + (cell.c * cellSize) + (cellSize / 2);
+      tile.position.y = -50 + (cell.r * cellSize) + (cellSize / 2);
+      
+      this.paintGroup.add(tile);
+    });
   }
 
   onWindowResize() {

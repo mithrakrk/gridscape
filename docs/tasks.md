@@ -4,13 +4,17 @@
 Current sprint focus: Setting up the web application skeleton and the Three.js basic scene.
 
 ## To Do
-- [ ] Implement the paint splatter logic at the impact coordinates.
-- [ ] Update grid data structure based on the splash radius (formula degree).
+- [ ] Build Explore Mode camera controls (arrow keys or WASD).
+- [ ] Create live coordinate list UI for Explore Mode.
+- [ ] Implement UI toggle between Fire Mode and Explore Mode.
 
 ## In Progress
-- [ ] Implement the paint splatter grid reveal logic.
+- [ ] Refine visual splash effects and animation for painted tiles.
 
 ## Done
+- [x] Implement the paint splatter logic at the impact coordinates.
+- [x] Update grid data structure based on the splash radius (formula degree).
+- [x] Implement the paint splatter grid reveal logic using UV-mapped texture tiles.
 - [x] Implement an iterative physics trajectory solver to trace the exact intersection with walls.
 - [x] Refine impact coordinates calculation on the target wall.
 - [x] Build the Fire Mode UI component (input box and buttons).

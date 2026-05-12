@@ -21,7 +21,13 @@ export const GameCanvas = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     previewTrajectory: (analysis) => {
       if (sceneManagerRef.current) {
-        sceneManagerRef.current.drawTrajectory(analysis);
+        return sceneManagerRef.current.drawTrajectory(analysis);
+      }
+      return null;
+    },
+    paintCells: (cells, gridSize) => {
+      if (sceneManagerRef.current) {
+        sceneManagerRef.current.addPaintCells(cells, gridSize);
       }
     }
   }));

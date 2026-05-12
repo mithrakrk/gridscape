@@ -1,11 +1,11 @@
 # Context Handoff
 
 ## Current Context
-- **Last Action Taken**: Built the `FormulaEngine` using `math.js`, added the `FireModeUI` overlay, and connected it to `SceneManager` to draw an MVP trajectory ghost line based on evaluating the math formula.
+- **Last Action Taken**: Completed Milestone 3. Integrated AI-generated Renaissance artwork, `GridManager` for tracking 20x20 cell state, and dynamic UV-mapped Three.js planes to reveal the painting based on paint splatter.
 - **Current Blockers**: None.
-- **Open Questions**: How should the trajectory curve based on the variables used? Should `y` affect vertical arc, `x` affect horizontal curve, etc.?
+- **Open Questions**: How should the transition between Fire Mode and Explore Mode look? Should the camera smoothly pan to the target wall?
 
 ## Next Steps
-- Implement an iterative solver to trace the exact curve of the paint shot from the turret to the target wall.
-- Calculate exact grid impact coordinates based on the raycast/trajectory intersection.
-- Trigger paint logic based on the formula degree (splash radius).
+- Begin Milestone 4: Explore Mode & UI Polish.
+- Implement camera controls to let the player fly up to the target wall.
+- Show live coordinates of the grid cells when hovering in Explore mode.
