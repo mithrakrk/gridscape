@@ -56,8 +56,9 @@ export class TrajectorySolver {
       }
 
       // Calculate final world position
-      // We scale the offset down slightly so math results like x^2 (100) don't immediately fly out of bounds
-      const scaleFactor = 0.5;
+      // We scale the offset down slightly, AND we multiply by `t` (progress)
+      // This ensures that at t=0, the offset is exactly 0 and it perfectly anchors to the cannon!
+      const scaleFactor = 0.5 * Math.pow(t, 1.5);
       
       const finalX = start.x + (offsetX * scaleFactor);
       const finalY = start.y + (offsetY * scaleFactor);
