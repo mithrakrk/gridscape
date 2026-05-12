@@ -32,6 +32,12 @@ export class SceneManager {
     this.obstaclesGroup = new THREE.Group();
     this.scene.add(this.obstaclesGroup);
 
+    this.particlesGroup = new THREE.Group();
+    this.scene.add(this.particlesGroup);
+
+    this.raycaster = new THREE.Raycaster();
+    this.centerCoord = new THREE.Vector2(0, 0);
+
     this.animate = this.animate.bind(this);
     this.renderer.setAnimationLoop(this.animate);
 
@@ -84,7 +90,7 @@ export class SceneManager {
     this.scene.add(this.cube);
 
     // Target wall grid helper (matches 9x9 size)
-    const gridHelper = new THREE.GridHelper(100, 9, 0x999999, 0xbbbbbb);
+    const gridHelper = new THREE.GridHelper(100, 9, 0x444444, 0x222222);
     gridHelper.rotation.x = Math.PI / 2;
     gridHelper.position.z = -49.9;
     this.scene.add(gridHelper);
@@ -95,6 +101,12 @@ export class SceneManager {
     const frame = new THREE.Mesh(frameGeo, frameMat);
     frame.position.z = -51; 
     this.scene.add(frame);
+
+    // Add Direction Labels to the walls to help users
+    this.addWallLabel("+X (Right)", 49.8, 0, 0, 0, -Math.PI/2, 0);
+    this.addWallLabel("-X (Left)", -49.8, 0, 0, 0, Math.PI/2, 0);
+    this.addWallLabel("+Y (Up)", 0, 49.8, 0, Math.PI/2, 0, 0);
+    this.addWallLabel("-Y (Down)", 0, -49.8, 0, -Math.PI/2, 0, 0);
 
     // Setup the artwork texture mapping but hide it initially
     const textureLoader = new THREE.TextureLoader();
@@ -154,16 +166,18 @@ export class SceneManager {
   }
 
   setupControls() {
-    this.keys = { w:false, a:false, s:false, d:false, q:false, e:false, arrowup:false, arrowdown:false, arrowleft:false, arrowright:false };
+    this.keys = { w:false, a:false, s:false, d:false, q:false, e:false, arrowup:false, arrowdown:false, arrowleft:false, arrowright:false, shift:false, " ":false };
     
     window.addEventListener('keydown', (e) => {
       const k = e.key.toLowerCase();
       if(this.keys.hasOwnProperty(k)) this.keys[k] = true;
+      if (e.key === " ") this.keys[" "] = true;
     });
     
     window.addEventListener('keyup', (e) => {
       const k = e.key.toLowerCase();
       if(this.keys.hasOwnProperty(k)) this.keys[k] = false;
+      if (e.key === " ") this.keys[" "] = false;
     });
   }
 
@@ -336,7 +350,9 @@ export class SceneManager {
       
       if (this.bulletAnim.progress < 1.0) {
         // Apply physics: v = v0 + at
-        this.bulletAnim.velocity += this.bulletAnim.acceleration;
+        // Fast forward if spacebar is held!
+        const accelMultiplier = this.keys[" "] ? 5.0 : 1.0;
+        this.bulletAnim.velocity += (this.bulletAnim.acceleration * accelMultiplier);
         this.bulletAnim.progress += this.bulletAnim.velocity;
         
         // Clamp to end
@@ -356,6 +372,12 @@ export class SceneManager {
         if (onUpdate) onUpdate(pt);
       } else {
         const finalPt = curve.getPointAt(1.0);
+        
+        if (finalPt.z > -49) {
+          // Hit an obstacle!
+          this.createExplosion(finalPt);
+        }
+        
         if (onComplete) onComplete(finalPt);
         
         // Reset camera
@@ -366,6 +388,25 @@ export class SceneManager {
         this.bulletAnim = null;
       }
     }
+
+    // Update particles
+    this.particlesGroup.children.forEach(p => {
+      const positions = p.geometry.attributes.position.array;
+      const vels = p.userData.velocities;
+      for(let i=0; i<vels.length; i++) {
+        positions[i*3] += vels[i].x;
+        positions[i*3+1] += vels[i].y;
+        positions[i*3+2] += vels[i].z;
+      }
+      p.geometry.attributes.position.needsUpdate = true;
+      p.userData.life -= 0.02;
+      p.material.opacity = p.userData.life;
+      if (p.userData.life <= 0) {
+        this.particlesGroup.remove(p);
+        p.geometry.dispose();
+        p.material.dispose();
+      }
+    });
 
     this.renderer.render(this.scene, this.camera);
   }

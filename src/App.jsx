@@ -9,8 +9,10 @@ function App() {
   const gridRef = useRef(new GridManager(9));
   const [coverage, setCoverage] = useState(0);
   const [liveCoords, setLiveCoords] = useState(null);
+  const [targetCell, setTargetCell] = useState(null);
   const [isFiring, setIsFiring] = useState(false);
   const [mode, setMode] = useState('fire'); // 'fire' or 'explore'
+  const [showCheatSheet, setShowCheatSheet] = useState(false);
   
   const [currentLevelIdx, setCurrentLevelIdx] = useState(0);
   const currentLevel = LEVELS[currentLevelIdx];
@@ -55,12 +57,13 @@ function App() {
                 const newCov = gridRef.current.getCoverage();
                 setCoverage(newCov);
                 if (newCov >= currentLevel.coverageThreshold) {
-                  setShowLevelComplete(true);
+                  setTimeout(() => {
+                    setShowLevelComplete(true);
+                  }, 1500); // Wait 1.5 seconds before showing celebration!
                 }
               }
             } else {
-              // Hit an obstacle, it just shatters!
-              // For MVP, we just do nothing and let the user visually see it hit the obstacle.
+              // Obstacle hit is handled by particles in SceneManager automatically!
             }
           }
         );
@@ -85,8 +88,15 @@ function App() {
         if (pos) {
           setLiveCoords({ x: pos.x.toFixed(1), y: pos.y.toFixed(1), z: pos.z.toFixed(1) });
         }
+        const cell = canvasRef.current.getRaycastCell();
+        if (cell) {
+          setTargetCell({ x: cell.x.toFixed(1), y: cell.y.toFixed(1) });
+        } else {
+          setTargetCell(null);
+        }
       } else if (mode === 'fire' && !isFiring) {
         setLiveCoords(null);
+        setTargetCell(null);
       }
       animFrame = requestAnimationFrame(trackCamera);
     };
@@ -143,25 +153,73 @@ function App() {
       {liveCoords && (
         <div style={{
           position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(0,0,0,0.8)', color: '#00ccff', padding: '15px 30px',
-          borderRadius: '8px', fontFamily: 'monospace', fontSize: '24px',
-          boxShadow: '0 0 20px rgba(0, 204, 255, 0.5)', zIndex: 10
+          background: 'rgba(20,20,20,0.9)', color: '#aaa', padding: '15px 30px',
+          borderRadius: '8px', fontFamily: 'monospace', fontSize: '18px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 10, display: 'flex', gap: '20px', border: '1px solid #333'
         }}>
-          X:{liveCoords.x} Y:{liveCoords.y} Z:{liveCoords.z}
+          <div>CAM: <span style={{ color: '#fff' }}>X:{liveCoords.x} Y:{liveCoords.y} Z:{liveCoords.z}</span></div>
+          {targetCell && (
+            <div style={{ borderLeft: '1px solid #555', paddingLeft: '20px', color: '#00ccff' }}>
+              TARGET: <span style={{ color: '#fff' }}>X:{targetCell.x} Y:{targetCell.y}</span>
+            </div>
+          )}
         </div>
       )}
 
       {mode === 'explore' && (
-        <div style={{
-          position: 'absolute', top: '100px', left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '10px 20px',
-          borderRadius: '8px', fontSize: '14px', textAlign: 'center'
-        }}>
-          <b>Controls:</b> WASD or Arrows to Move | Q/E to Fly Up/Down
-        </div>
+        <>
+          {/* Controls Hint */}
+          <div style={{
+            position: 'absolute', top: '100px', left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(20,20,20,0.8)', color: '#fff', padding: '10px 20px',
+            borderRadius: '8px', fontSize: '14px', textAlign: 'center', border: '1px solid #333'
+          }}>
+            <b>Controls:</b> WASD or Arrows to Move | Q/E to Fly | Hold SHIFT to Sprint
+          </div>
+          {/* Crosshair */}
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            color: 'rgba(0, 204, 255, 0.8)', fontSize: '24px', pointerEvents: 'none', fontWeight: 'bold'
+          }}>+</div>
+        </>
       )}
 
-      {mode === 'fire' && <FireModeUI onPreview={handlePreview} onFire={handleFire} isFiring={isFiring} />}
+      {mode === 'fire' && (
+        <>
+          <FireModeUI onPreview={handlePreview} onFire={handleFire} isFiring={isFiring} />
+          {isFiring && (
+            <div style={{ position: 'absolute', bottom: '100px', left: '50%', transform: 'translateX(-50%)', color: '#fff', background: 'rgba(0,0,0,0.8)', padding: '10px 20px', borderRadius: '8px' }}>
+              Hold <b>SPACEBAR</b> to fast-forward!
+            </div>
+          )}
+          
+          <button 
+            onClick={() => setShowCheatSheet(true)}
+            style={{ position: 'absolute', bottom: '20px', right: '20px', background: 'rgba(20,20,20,0.9)', color: '#00ccff', border: '1px solid #333', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            ? Math Cheat Sheet
+          </button>
+        </>
+      )}
+
+      {showCheatSheet && (
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          background: 'rgba(20,20,20,0.95)', border: '1px solid #444', color: '#fff', padding: '30px',
+          borderRadius: '12px', zIndex: 200, width: '400px', boxShadow: '0 10px 40px rgba(0,0,0,0.8)'
+        }}>
+          <h2 style={{ color: '#00ccff', marginTop: 0 }}>Math Cheat Sheet</h2>
+          <p>You can use any standard math functions!</p>
+          <ul style={{ lineHeight: '1.8' }}>
+            <li><code>sin(x)</code> / <code>cos(x)</code> - Trigonometry</li>
+            <li><code>abs(x)</code> - Absolute value</li>
+            <li><code>sqrt(x)</code> - Square root</li>
+            <li><code>x^2</code>, <code>y^3</code> - Exponents</li>
+            <li><code>(x + y) * 2</code> - Grouping</li>
+          </ul>
+          <button onClick={() => setShowCheatSheet(false)} style={{ marginTop: '20px', padding: '10px', width: '100%', background: '#00ccff', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Close</button>
+        </div>
+      )}
 
       {/* Level Complete Overlay */}
       {showLevelComplete && (

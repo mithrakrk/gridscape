@@ -46,6 +46,12 @@ export const GameCanvas = forwardRef((props, ref) => {
       }
       return null;
     },
+    getRaycastCell: () => {
+      if (sceneManagerRef.current) {
+        return sceneManagerRef.current.getRaycastCell();
+      }
+      return null;
+    },
     paintCells: (cells, gridSize) => {
       if (sceneManagerRef.current) {
         sceneManagerRef.current.addPaintCells(cells, gridSize);
