@@ -55,24 +55,29 @@ export class TrajectorySolver {
         // Silently ignore evaluation errors per step (e.g., divide by zero)
       }
 
-      // Calculate final world position
       // We scale the offset down slightly, AND we multiply by `t` (progress)
       // This ensures that at t=0, the offset is exactly 0 and it perfectly anchors to the cannon!
       const scaleFactor = 0.5 * Math.pow(t, 1.5);
       
-      const finalX = start.x + (offsetX * scaleFactor);
-      const finalY = start.y + (offsetY * scaleFactor);
+      const rawX = start.x + (offsetX * scaleFactor);
+      const rawY = start.y + (offsetY * scaleFactor);
+
+      // Bounce mechanics: Reflect values back into the -50 to 50 bounds
+      const pingPong = (val, min, max) => {
+        const range = max - min;
+        let normalized = val - min;
+        const numBounces = Math.floor(Math.abs(normalized) / range);
+        normalized = Math.abs(normalized) % (2 * range);
+        if (normalized > range) {
+          normalized = 2 * range - normalized;
+        }
+        return normalized + min;
+      };
+
+      const finalX = pingPong(rawX, -50, 50);
+      const finalY = pingPong(rawY, -50, 50);
 
       points.push(new THREE.Vector3(finalX, finalY, currentZ));
-
-      // Stop tracing if the trajectory hits a side wall, floor, or ceiling (bounds are -50 to +50)
-      if (finalX <= -50 || finalX >= 50 || finalY <= -50 || finalY >= 50) {
-        // Clamp the final point exactly to the wall for a clean visual impact
-        const clampedX = Math.max(-50, Math.min(50, finalX));
-        const clampedY = Math.max(-50, Math.min(50, finalY));
-        points[points.length - 1].set(clampedX, clampedY, currentZ);
-        break; 
-      }
     }
     
     return points;

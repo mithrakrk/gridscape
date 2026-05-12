@@ -25,6 +25,11 @@ export const GameCanvas = forwardRef((props, ref) => {
       }
       return null;
     },
+    fireBullet: (points, onUpdate, onComplete) => {
+      if (sceneManagerRef.current) {
+        sceneManagerRef.current.animateBullet(points, onUpdate, onComplete);
+      }
+    },
     paintCells: (cells, gridSize) => {
       if (sceneManagerRef.current) {
         sceneManagerRef.current.addPaintCells(cells, gridSize);

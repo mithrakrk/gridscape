@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FormulaEngine } from '../game/FormulaEngine';
 
-export function FireModeUI({ onPreview, onFire }) {
+export function FireModeUI({ onPreview, onFire, isFiring }) {
   const [formula, setFormula] = useState('x^2 + y');
   const [analysis, setAnalysis] = useState(null);
 
@@ -21,39 +21,40 @@ export function FireModeUI({ onPreview, onFire }) {
 
   return (
     <div style={{
-      position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+      position: 'absolute', top: '20px', right: '20px',
       background: 'rgba(255,255,255,0.95)', padding: '20px', borderRadius: '12px', 
-      boxShadow: '0 8px 24px rgba(0,0,0,0.15)', width: '450px', display: 'flex', flexDirection: 'column', gap: '15px',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.15)', width: '300px', display: 'flex', flexDirection: 'column', gap: '15px',
       fontFamily: 'sans-serif'
     }}>
-      <h3 style={{ margin: 0, color: '#222', fontSize: '18px' }}>Fire Mode</h3>
+      <h3 style={{ margin: 0, color: '#222', fontSize: '16px' }}>Formula Settings</h3>
       <input 
         type="text" 
         value={formula} 
         onChange={e => setFormula(e.target.value)}
-        placeholder="Enter formula (e.g. x^2 + y)"
-        style={{ padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none' }}
+        placeholder="e.g. x^2 + y"
+        style={{ padding: '10px', fontSize: '18px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none', fontFamily: 'monospace' }}
       />
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <button 
-          onClick={handleParse} 
-          style={{ flex: 1, padding: '10px', cursor: 'pointer', background: '#eee', border: '1px solid #ddd', borderRadius: '6px', fontWeight: 'bold' }}
-        >
-          Parse & Preview
-        </button>
-        <button 
-          onClick={handleFire} 
-          disabled={!analysis?.valid} 
-          style={{ flex: 1, padding: '10px', background: analysis?.valid ? '#00ccff' : '#ccc', color: analysis?.valid ? '#000' : '#666', border: 'none', borderRadius: '6px', cursor: analysis?.valid ? 'pointer' : 'not-allowed', fontWeight: 'bold' }}
-        >
-          FIRE!
-        </button>
-      </div>
+      
+      <button 
+        onClick={handleParse} 
+        style={{ padding: '8px', cursor: 'pointer', background: '#eee', border: '1px solid #ddd', borderRadius: '6px', fontWeight: 'bold' }}
+      >
+        Preview Trace
+      </button>
+
+      <button 
+        onClick={handleFire} 
+        disabled={!analysis?.valid || isFiring} 
+        style={{ padding: '12px', background: (analysis?.valid && !isFiring) ? '#00ccff' : '#ccc', color: (analysis?.valid && !isFiring) ? '#000' : '#666', border: 'none', borderRadius: '6px', cursor: (analysis?.valid && !isFiring) ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '16px' }}
+      >
+        {isFiring ? 'FIRING...' : 'FIRE CANNON!'}
+      </button>
+
       {analysis && (
-        <div style={{ fontSize: '13px', color: analysis.valid ? '#008800' : '#cc0000', marginTop: '5px', background: analysis.valid ? '#e6ffe6' : '#ffe6e6', padding: '10px', borderRadius: '6px' }}>
+        <div style={{ fontSize: '12px', color: analysis.valid ? '#008800' : '#cc0000', background: analysis.valid ? '#e6ffe6' : '#ffe6e6', padding: '8px', borderRadius: '6px' }}>
           {analysis.valid ? 
-            `✅ Valid! | Vars: ${analysis.variables.join(', ')} | Degree: ${analysis.degree} | Centers: ${analysis.variables.length}` : 
-            `❌ Error: ${analysis.error}`
+            `✅ Vars: ${analysis.variables.join(',')} | Deg: ${analysis.degree}` : 
+            `❌ ${analysis.error}`
           }
         </div>
       )}

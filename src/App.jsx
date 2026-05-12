@@ -5,8 +5,10 @@ import { GridManager } from './game/GridManager';
 
 function App() {
   const canvasRef = useRef(null);
-  const gridRef = useRef(new GridManager(20));
+  const gridRef = useRef(new GridManager(9));
   const [coverage, setCoverage] = useState(0);
+  const [liveCoords, setLiveCoords] = useState(null);
+  const [isFiring, setIsFiring] = useState(false);
 
   const handlePreview = (analysis) => {
     if (canvasRef.current) {
@@ -15,17 +17,27 @@ function App() {
   };
 
   const handleFire = (analysis) => {
-    if (canvasRef.current) {
+    if (canvasRef.current && !isFiring) {
       const points = canvasRef.current.previewTrajectory(analysis);
       if (points && points.length > 0) {
-        const impact = points[points.length - 1];
-        if (impact.z <= -49) { // Hit the target wall
-          const newCells = gridRef.current.splatter(impact.x, impact.y, analysis.degree);
-          if (newCells.length > 0) {
-            canvasRef.current.paintCells(newCells, gridRef.current.size);
-            setCoverage(gridRef.current.getCoverage());
+        setIsFiring(true);
+        canvasRef.current.fireBullet(
+          points, 
+          (pt) => {
+            setLiveCoords({ x: pt.x.toFixed(1), y: pt.y.toFixed(1), z: pt.z.toFixed(1) });
+          },
+          (impact) => {
+            setLiveCoords(null);
+            setIsFiring(false);
+            if (impact.z <= -49) { // Hit the target wall
+              const newCells = gridRef.current.splatter(impact.x, impact.y, analysis.degree);
+              if (newCells.length > 0) {
+                canvasRef.current.paintCells(newCells, gridRef.current.size);
+                setCoverage(gridRef.current.getCoverage());
+              }
+            }
           }
-        }
+        );
       }
     }
   };
@@ -55,7 +67,18 @@ function App() {
         </div>
       </div>
       
-      <FireModeUI onPreview={handlePreview} onFire={handleFire} />
+      {liveCoords && (
+        <div style={{
+          position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.8)', color: '#00ccff', padding: '15px 30px',
+          borderRadius: '8px', fontFamily: 'monospace', fontSize: '24px',
+          boxShadow: '0 0 20px rgba(0, 204, 255, 0.5)', zIndex: 10
+        }}>
+          X:{liveCoords.x} Y:{liveCoords.y} Z:{liveCoords.z}
+        </div>
+      )}
+
+      <FireModeUI onPreview={handlePreview} onFire={handleFire} isFiring={isFiring} />
     </div>
   );
 }

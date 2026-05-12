@@ -24,6 +24,7 @@ export class SceneManager {
     this.setupLighting();
     this.setupCube();
     this.setupTurret();
+    this.setupCompass();
 
     this.animate = this.animate.bind(this);
     this.renderer.setAnimationLoop(this.animate);
@@ -129,6 +130,44 @@ export class SceneManager {
     this.scene.add(this.turret);
   }
 
+  setupCompass() {
+    this.compassGroup = new THREE.Group();
+    // Red=X(Right), Green=Y(Up), Blue=Z(Forward/Backward)
+    const axesHelper = new THREE.AxesHelper(10);
+    this.compassGroup.add(axesHelper);
+    // Place it in the bottom left corner near the player
+    this.compassGroup.position.set(-40, -40, 40); 
+    this.scene.add(this.compassGroup);
+  }
+
+  animateBullet(points, onUpdate, onComplete) {
+    if (this.bullet) {
+      this.scene.remove(this.bullet);
+      this.bullet.geometry.dispose();
+      this.bullet.material.dispose();
+    }
+    
+    const geo = new THREE.SphereGeometry(1, 16, 16);
+    const mat = new THREE.MeshStandardMaterial({ 
+      color: 0x00ccff, 
+      emissive: 0x00ccff, 
+      emissiveIntensity: 1 
+    });
+    this.bullet = new THREE.Mesh(geo, mat);
+    this.scene.add(this.bullet);
+
+    if (!this.originalCameraPos) {
+      this.originalCameraPos = this.camera.position.clone();
+    }
+
+    this.bulletAnim = {
+      points: points,
+      index: 0,
+      onUpdate: onUpdate,
+      onComplete: onComplete
+    };
+  }
+
   drawTrajectory(analysis) {
     if (this.trajectoryLine) {
       this.scene.remove(this.trajectoryLine);
@@ -198,6 +237,34 @@ export class SceneManager {
   }
 
   animate() {
+    if (this.bulletAnim) {
+      const { points, index, onUpdate, onComplete } = this.bulletAnim;
+      
+      if (index < points.length) {
+        const pt = points[index];
+        this.bullet.position.copy(pt);
+        
+        // Camera follows the bullet slightly behind and above
+        const camPos = pt.clone().add(new THREE.Vector3(0, 5, 15));
+        this.camera.position.lerp(camPos, 0.2);
+        this.camera.lookAt(pt);
+
+        if (onUpdate) onUpdate(pt);
+        
+        // Advance frame
+        this.bulletAnim.index++;
+      } else {
+        if (onComplete) onComplete(points[points.length - 1]);
+        
+        // Reset camera
+        this.camera.position.copy(this.originalCameraPos);
+        this.camera.lookAt(0, 0, -50);
+        
+        this.scene.remove(this.bullet);
+        this.bulletAnim = null;
+      }
+    }
+
     this.renderer.render(this.scene, this.camera);
   }
 

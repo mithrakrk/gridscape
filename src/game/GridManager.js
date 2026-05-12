@@ -1,5 +1,5 @@
 export class GridManager {
-  constructor(size = 20) {
+  constructor(size = 9) {
     this.size = size;
     // 2D array: grid[row][col]
     this.grid = Array.from({ length: size }, () => Array(size).fill(false));
