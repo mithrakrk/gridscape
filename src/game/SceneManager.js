@@ -185,9 +185,15 @@ export class SceneManager {
       this.originalCameraPos = this.camera.position.clone();
     }
 
+    // Create a 3D curve from the raw math points.
+    // This normalizes the physical distance so the bullet doesn't suddenly "jump" when math spikes.
+    const curve = new THREE.CatmullRomCurve3(points);
+
     this.bulletAnim = {
-      points: points,
-      index: 0,
+      curve: curve,
+      progress: 0,           // normalized distance (0.0 to 1.0)
+      velocity: 0,           // starts at 0 speed
+      acceleration: 0.00004, // constant physical acceleration (takes ~3 seconds to cross)
       onUpdate: onUpdate,
       onComplete: onComplete
     };
@@ -263,10 +269,20 @@ export class SceneManager {
 
   animate() {
     if (this.bulletAnim) {
-      const { points, index, onUpdate, onComplete } = this.bulletAnim;
+      const { curve, onUpdate, onComplete } = this.bulletAnim;
       
-      if (index < points.length) {
-        const pt = points[index];
+      if (this.bulletAnim.progress < 1.0) {
+        // Apply physics: v = v0 + at
+        this.bulletAnim.velocity += this.bulletAnim.acceleration;
+        this.bulletAnim.progress += this.bulletAnim.velocity;
+        
+        // Clamp to end
+        if (this.bulletAnim.progress > 1.0) {
+          this.bulletAnim.progress = 1.0;
+        }
+
+        // getPointAt perfectly normalizes physical distance along the arc
+        const pt = curve.getPointAt(this.bulletAnim.progress);
         this.bullet.position.copy(pt);
         
         // Camera follows the bullet slightly behind and above
@@ -275,11 +291,9 @@ export class SceneManager {
         this.camera.lookAt(pt);
 
         if (onUpdate) onUpdate(pt);
-        
-        // Advance frame
-        this.bulletAnim.index++;
       } else {
-        if (onComplete) onComplete(points[points.length - 1]);
+        const finalPt = curve.getPointAt(1.0);
+        if (onComplete) onComplete(finalPt);
         
         // Reset camera
         this.camera.position.copy(this.originalCameraPos);
