@@ -61,7 +61,7 @@ export class SceneManager {
     
     // Museum materials
     const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xeaeaea, side: THREE.BackSide, roughness: 0.9 });
-    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xd2b48c, side: THREE.BackSide, roughness: 0.8 }); // warm wood/tan
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x3d2314, side: THREE.BackSide, roughness: 0.1 }); // dark glossy wood
     const ceilingMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 1.0 });
     const targetWallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 0.5 }); // pristine white for art
 
@@ -77,11 +77,18 @@ export class SceneManager {
     this.cube = new THREE.Mesh(geometry, materials);
     this.scene.add(this.cube);
 
-    // Target wall grid helper (subtle gray for the blank canvas)
-    const gridHelper = new THREE.GridHelper(100, 20, 0xdddddd, 0xcccccc);
+    // Target wall grid helper (matches 9x9 size)
+    const gridHelper = new THREE.GridHelper(100, 9, 0x999999, 0xbbbbbb);
     gridHelper.rotation.x = Math.PI / 2;
     gridHelper.position.z = -49.9;
     this.scene.add(gridHelper);
+
+    // Grand Gold Frame around target wall
+    const frameGeo = new THREE.BoxGeometry(104, 104, 2);
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.3, metalness: 0.8 });
+    const frame = new THREE.Mesh(frameGeo, frameMat);
+    frame.position.z = -51; 
+    this.scene.add(frame);
 
     // Setup the artwork texture mapping but hide it initially
     const textureLoader = new THREE.TextureLoader();
@@ -133,10 +140,10 @@ export class SceneManager {
   setupCompass() {
     this.compassGroup = new THREE.Group();
     // Red=X(Right), Green=Y(Up), Blue=Z(Forward/Backward)
-    const axesHelper = new THREE.AxesHelper(10);
+    const axesHelper = new THREE.AxesHelper(15);
     this.compassGroup.add(axesHelper);
-    // Place it in the bottom left corner near the player
-    this.compassGroup.position.set(-40, -40, 40); 
+    // Place it prominently in the bottom left, slightly forward so it doesn't clip
+    this.compassGroup.position.set(-35, -40, 20); 
     this.scene.add(this.compassGroup);
   }
 
@@ -147,11 +154,29 @@ export class SceneManager {
       this.bullet.material.dispose();
     }
     
-    const geo = new THREE.SphereGeometry(1, 16, 16);
-    const mat = new THREE.MeshStandardMaterial({ 
-      color: 0x00ccff, 
-      emissive: 0x00ccff, 
-      emissiveIntensity: 1 
+    // Multi-colored Shader Paintball
+    const geo = new THREE.SphereGeometry(2, 32, 32); 
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normal;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vNormal;
+        void main() {
+          vec3 color1 = vec3(1.0, 0.0, 0.5); // pink
+          vec3 color2 = vec3(0.0, 0.8, 1.0); // cyan
+          vec3 color3 = vec3(1.0, 0.8, 0.0); // yellow
+          float mix1 = (vNormal.x + 1.0) * 0.5;
+          float mix2 = (vNormal.y + 1.0) * 0.5;
+          vec3 finalColor = mix(color1, color2, mix1);
+          finalColor = mix(finalColor, color3, mix2);
+          gl_FragColor = vec4(finalColor, 1.0);
+        }
+      `
     });
     this.bullet = new THREE.Mesh(geo, mat);
     this.scene.add(this.bullet);
@@ -176,10 +201,10 @@ export class SceneManager {
     }
 
     const material = new THREE.LineBasicMaterial({
-      color: 0x00ccff,
-      linewidth: 3,
+      color: 0xf5f5dc, // translucent beige
+      linewidth: 1,    // thin line
       transparent: true,
-      opacity: 0.8
+      opacity: 0.3
     });
 
     const startPoint = new THREE.Vector3(0, -5, 48); // Turret muzzle

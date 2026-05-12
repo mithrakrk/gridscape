@@ -10,7 +10,7 @@ export class TrajectorySolver {
    */
   static calculate(analysis, start, targetZ) {
     const points = [];
-    const steps = 100; // Resolution of the curve
+    const steps = 400; // Increased resolution for smoother curve and slower animation
     const zDistance = start.z - targetZ;
     
     for (let i = 0; i <= steps; i++) {
