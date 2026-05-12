@@ -1,0 +1,12 @@
+annotations/
+brain/
+browserAllowlist.txt
+browser_recordings/
+code_tracker/
+conversations/
+implicit/
+installation_id
+knowledge/
+mcp_config.json
+scratch/
+user_settings.pb
