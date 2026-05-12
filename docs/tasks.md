@@ -4,14 +4,16 @@
 Current sprint focus: Setting up the web application skeleton and the Three.js basic scene.
 
 ## To Do
-- [ ] Build Explore Mode camera controls (arrow keys or WASD).
-- [ ] Create live coordinate list UI for Explore Mode.
-- [ ] Implement UI toggle between Fire Mode and Explore Mode.
+- [ ] Implement level progression data.
+- [ ] Add obstacles inside the room for higher levels.
 
 ## In Progress
-- [ ] Refine visual splash effects and animation for painted tiles.
+- [ ] Review UI and code architecture for final MVP polish.
 
 ## Done
+- [x] Build Explore Mode camera controls (arrow keys or WASD).
+- [x] Create live coordinate list UI for Explore Mode.
+- [x] Implement UI toggle between Fire Mode and Explore Mode.
 - [x] Implement the paint splatter logic at the impact coordinates.
 - [x] Update grid data structure based on the splash radius (formula degree).
 - [x] Implement the paint splatter grid reveal logic using UV-mapped texture tiles.

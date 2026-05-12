@@ -25,6 +25,9 @@ export class SceneManager {
     this.setupCube();
     this.setupTurret();
     this.setupCompass();
+    this.setupControls();
+
+    this.mode = 'fire'; // 'fire' or 'explore'
 
     this.animate = this.animate.bind(this);
     this.renderer.setAnimationLoop(this.animate);
@@ -145,6 +148,29 @@ export class SceneManager {
     // Place it prominently in the bottom left, slightly forward so it doesn't clip
     this.compassGroup.position.set(-35, -40, 20); 
     this.scene.add(this.compassGroup);
+  }
+
+  setupControls() {
+    this.keys = { w:false, a:false, s:false, d:false, q:false, e:false, arrowup:false, arrowdown:false, arrowleft:false, arrowright:false };
+    
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if(this.keys.hasOwnProperty(k)) this.keys[k] = true;
+    });
+    
+    window.addEventListener('keyup', (e) => {
+      const k = e.key.toLowerCase();
+      if(this.keys.hasOwnProperty(k)) this.keys[k] = false;
+    });
+  }
+
+  setMode(mode) {
+    this.mode = mode;
+    if (mode === 'fire') {
+      // Return camera to turret
+      this.camera.position.copy(this.originalCameraPos);
+      this.camera.lookAt(0, 0, -50);
+    }
   }
 
   animateBullet(points, onUpdate, onComplete) {
@@ -268,7 +294,11 @@ export class SceneManager {
   }
 
   animate() {
-    if (this.bulletAnim) {
+    if (this.mode === 'explore') {
+      this.updateExploreCamera();
+    }
+
+    if (this.bulletAnim && this.mode === 'fire') {
       const { curve, onUpdate, onComplete } = this.bulletAnim;
       
       if (this.bulletAnim.progress < 1.0) {
@@ -305,6 +335,21 @@ export class SceneManager {
     }
 
     this.renderer.render(this.scene, this.camera);
+  }
+
+  updateExploreCamera() {
+    const speed = 1.0;
+    if (this.keys.w || this.keys.arrowup) this.camera.position.z -= speed;
+    if (this.keys.s || this.keys.arrowdown) this.camera.position.z += speed;
+    if (this.keys.a || this.keys.arrowleft) this.camera.position.x -= speed;
+    if (this.keys.d || this.keys.arrowright) this.camera.position.x += speed;
+    if (this.keys.e) this.camera.position.y += speed; // up
+    if (this.keys.q) this.camera.position.y -= speed; // down
+
+    // Keep camera inside the room
+    this.camera.position.x = Math.max(-49, Math.min(49, this.camera.position.x));
+    this.camera.position.y = Math.max(-49, Math.min(49, this.camera.position.y));
+    this.camera.position.z = Math.max(-49, Math.min(49, this.camera.position.z));
   }
 
   destroy() {

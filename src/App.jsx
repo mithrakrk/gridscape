@@ -9,6 +9,7 @@ function App() {
   const [coverage, setCoverage] = useState(0);
   const [liveCoords, setLiveCoords] = useState(null);
   const [isFiring, setIsFiring] = useState(false);
+  const [mode, setMode] = useState('fire'); // 'fire' or 'explore'
 
   const handlePreview = (analysis) => {
     if (canvasRef.current) {
@@ -42,6 +43,32 @@ function App() {
     }
   };
 
+  const handleToggleMode = () => {
+    const newMode = mode === 'fire' ? 'explore' : 'fire';
+    setMode(newMode);
+    if (canvasRef.current) {
+      canvasRef.current.setMode(newMode);
+    }
+  };
+
+  // Live track camera coordinates in explore mode
+  React.useEffect(() => {
+    let animFrame;
+    const trackCamera = () => {
+      if (mode === 'explore' && canvasRef.current) {
+        const pos = canvasRef.current.getCameraPos();
+        if (pos) {
+          setLiveCoords({ x: pos.x.toFixed(1), y: pos.y.toFixed(1), z: pos.z.toFixed(1) });
+        }
+      } else if (mode === 'fire' && !isFiring) {
+        setLiveCoords(null);
+      }
+      animFrame = requestAnimationFrame(trackCamera);
+    };
+    animFrame = requestAnimationFrame(trackCamera);
+    return () => cancelAnimationFrame(animFrame);
+  }, [mode, isFiring]);
+
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
       <GameCanvas ref={canvasRef} />
@@ -67,6 +94,26 @@ function App() {
         </div>
       </div>
       
+      {/* Mode Toggle UI */}
+      <div style={{
+        position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)',
+        background: 'rgba(255,255,255,0.9)', padding: '5px', borderRadius: '8px', 
+        display: 'flex', gap: '5px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+      }}>
+        <button 
+          onClick={() => mode !== 'fire' && handleToggleMode()}
+          style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: mode === 'fire' ? '#00ccff' : 'transparent', color: mode === 'fire' ? '#000' : '#666' }}
+        >
+          FIRE MODE
+        </button>
+        <button 
+          onClick={() => mode !== 'explore' && handleToggleMode()}
+          style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: mode === 'explore' ? '#00ccff' : 'transparent', color: mode === 'explore' ? '#000' : '#666' }}
+        >
+          EXPLORE MODE
+        </button>
+      </div>
+      
       {liveCoords && (
         <div style={{
           position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
@@ -78,7 +125,17 @@ function App() {
         </div>
       )}
 
-      <FireModeUI onPreview={handlePreview} onFire={handleFire} isFiring={isFiring} />
+      {mode === 'explore' && (
+        <div style={{
+          position: 'absolute', top: '100px', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '10px 20px',
+          borderRadius: '8px', fontSize: '14px', textAlign: 'center'
+        }}>
+          <b>Controls:</b> WASD or Arrows to Move | Q/E to Fly Up/Down
+        </div>
+      )}
+
+      {mode === 'fire' && <FireModeUI onPreview={handlePreview} onFire={handleFire} isFiring={isFiring} />}
     </div>
   );
 }

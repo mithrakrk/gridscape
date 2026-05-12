@@ -30,6 +30,17 @@ export const GameCanvas = forwardRef((props, ref) => {
         sceneManagerRef.current.animateBullet(points, onUpdate, onComplete);
       }
     },
+    setMode: (mode) => {
+      if (sceneManagerRef.current) {
+        sceneManagerRef.current.setMode(mode);
+      }
+    },
+    getCameraPos: () => {
+      if (sceneManagerRef.current) {
+        return sceneManagerRef.current.camera.position;
+      }
+      return null;
+    },
     paintCells: (cells, gridSize) => {
       if (sceneManagerRef.current) {
         sceneManagerRef.current.addPaintCells(cells, gridSize);
