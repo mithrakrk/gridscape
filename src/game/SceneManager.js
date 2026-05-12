@@ -7,7 +7,7 @@ export class SceneManager {
     this.height = container.clientHeight;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#111111');
+    this.scene.background = new THREE.Color('#f4f4f4');
 
     // Camera setup (Player is on the inside face of a cube looking inward)
     // Cube size is 100x100x100
@@ -31,77 +31,55 @@ export class SceneManager {
   }
 
   setupLighting() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
     this.scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0xffffff, 1.5, 200);
-    pointLight.position.set(0, 20, 30);
-    this.scene.add(pointLight);
+    // Warm gallery overhead light
+    const overheadLight = new THREE.PointLight(0xfff5e6, 1.2, 200);
+    overheadLight.position.set(0, 40, 0);
+    this.scene.add(overheadLight);
     
-    // Add a light near the target wall to brighten it up
-    const targetLight = new THREE.PointLight(0xffffff, 1.0, 150);
-    targetLight.position.set(0, 0, -30);
-    this.scene.add(targetLight);
+    // Spotlights pointing at the target wall (artwork)
+    const leftSpot = new THREE.SpotLight(0xffffff, 1.5);
+    leftSpot.position.set(-30, 30, 20);
+    leftSpot.target.position.set(0, 0, -50);
+    this.scene.add(leftSpot);
+    this.scene.add(leftSpot.target);
+
+    const rightSpot = new THREE.SpotLight(0xffffff, 1.5);
+    rightSpot.position.set(30, 30, 20);
+    rightSpot.target.position.set(0, 0, -50);
+    this.scene.add(rightSpot);
+    this.scene.add(rightSpot.target);
   }
 
   setupCube() {
     // The interior of the cube
     const geometry = new THREE.BoxGeometry(100, 100, 100);
     
-    const forceFieldMaterial = new THREE.MeshPhysicalMaterial({ 
-      color: 0x1144ff, 
-      emissive: 0x002288,
-      emissiveIntensity: 0.8,
-      transparent: true, 
-      opacity: 0.15,
-      side: THREE.BackSide,
-      roughness: 0.2
-    });
+    // Museum materials
+    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xeaeaea, side: THREE.BackSide, roughness: 0.9 });
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xd2b48c, side: THREE.BackSide, roughness: 0.8 }); // warm wood/tan
+    const ceilingMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 1.0 });
+    const targetWallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 0.5 }); // pristine white for art
 
-    // Different materials for different faces
     const materials = [
-      forceFieldMaterial, // Right
-      forceFieldMaterial, // Left
-      forceFieldMaterial, // Top
-      forceFieldMaterial, // Bottom
-      new THREE.MeshStandardMaterial({ color: 0x222222, side: THREE.BackSide }), // Front (Target Wall)
-      new THREE.MeshStandardMaterial({ color: 0x111111, side: THREE.BackSide }), // Back (Player Wall)
+      wallMaterial, // Right
+      wallMaterial, // Left
+      ceilingMaterial, // Top
+      floorMaterial, // Bottom
+      targetWallMaterial, // Front (Target Wall)
+      wallMaterial, // Back (Player Wall)
     ];
 
     this.cube = new THREE.Mesh(geometry, materials);
     this.scene.add(this.cube);
 
-    // Target wall grid helper
-    const gridHelper = new THREE.GridHelper(100, 20, 0x444444, 0x222222);
+    // Target wall grid helper (subtle gray for the blank canvas)
+    const gridHelper = new THREE.GridHelper(100, 20, 0xdddddd, 0xcccccc);
     gridHelper.rotation.x = Math.PI / 2;
     gridHelper.position.z = -49.9;
     this.scene.add(gridHelper);
-
-    // Force field grids for side walls to enhance the glowing effect
-    const createWallGrid = () => {
-      const grid = new THREE.GridHelper(100, 20, 0x4488ff, 0x113388);
-      grid.material.opacity = 0.3;
-      grid.material.transparent = true;
-      return grid;
-    };
-
-    const bottomGrid = createWallGrid();
-    bottomGrid.position.y = -49.9;
-    this.scene.add(bottomGrid);
-
-    const topGrid = createWallGrid();
-    topGrid.position.y = 49.9;
-    this.scene.add(topGrid);
-
-    const leftGrid = createWallGrid();
-    leftGrid.position.x = -49.9;
-    leftGrid.rotation.z = Math.PI / 2;
-    this.scene.add(leftGrid);
-
-    const rightGrid = createWallGrid();
-    rightGrid.position.x = 49.9;
-    rightGrid.rotation.z = Math.PI / 2;
-    this.scene.add(rightGrid);
   }
 
   setupTurret() {
@@ -110,7 +88,7 @@ export class SceneManager {
     // Base
     const baseGeo = new THREE.SphereGeometry(2, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
     baseGeo.rotateX(Math.PI / 2); // Mount to back wall
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, metalness: 0.3, roughness: 0.5 }); // light museum stand
     const base = new THREE.Mesh(baseGeo, baseMat);
     this.turret.add(base);
 
@@ -118,18 +96,18 @@ export class SceneManager {
     const barrelGeo = new THREE.CylinderGeometry(0.8, 1.2, 6, 16);
     barrelGeo.rotateX(Math.PI / 2); // point forward (along Z axis)
     barrelGeo.translate(0, 0, -3); // move it so base is at origin
-    const barrelMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.2 });
+    const barrelMat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6, roughness: 0.4 }); // lighter metal
     const barrel = new THREE.Mesh(barrelGeo, barrelMat);
     this.turret.add(barrel);
 
     // Paint edge on muzzle
     const muzzleGeo = new THREE.TorusGeometry(0.8, 0.2, 16, 32);
-    const paintColor = 0xff0055; // neon pink paint
+    const paintColor = 0x00ccff; // bright cyan paint for contrast
     const muzzleMat = new THREE.MeshStandardMaterial({ 
       color: paintColor, 
       emissive: paintColor,
-      emissiveIntensity: 0.6,
-      roughness: 0.1
+      emissiveIntensity: 0.4,
+      roughness: 0.2
     });
     const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
     muzzle.position.set(0, 0, -6); // at the tip of the barrel
