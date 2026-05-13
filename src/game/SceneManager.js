@@ -219,33 +219,61 @@ export class SceneManager {
   setupTurret() {
     this.turret = new THREE.Group();
     
-    // Base
-    const baseGeo = new THREE.SphereGeometry(2, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    baseGeo.rotateX(Math.PI / 2); // Mount to back wall
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, metalness: 0.3, roughness: 0.5 }); // light museum stand
-    const base = new THREE.Mesh(baseGeo, baseMat);
-    this.turret.add(base);
+    // Stand/Mount to wall
+    const mountGeo = new THREE.CylinderGeometry(1.5, 2, 2, 16);
+    mountGeo.rotateX(Math.PI / 2);
+    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 });
+    const mount = new THREE.Mesh(mountGeo, darkMetal);
+    mount.position.set(0, 0, 1);
+    this.turret.add(mount);
+
+    // Gun Body (Receiver)
+    const bodyGeo = new THREE.BoxGeometry(2, 4, 6);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.5, roughness: 0.5 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.set(0, 0, -2);
+    this.turret.add(body);
 
     // Barrel
-    const barrelGeo = new THREE.CylinderGeometry(0.8, 1.2, 6, 16);
-    barrelGeo.rotateX(Math.PI / 2); // point forward (along Z axis)
-    barrelGeo.translate(0, 0, -3); // move it so base is at origin
-    const barrelMat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6, roughness: 0.4 }); // lighter metal
+    const barrelGeo = new THREE.CylinderGeometry(0.4, 0.4, 8, 16);
+    barrelGeo.rotateX(Math.PI / 2);
+    const barrelMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9, roughness: 0.1 });
     const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+    barrel.position.set(0, 0.5, -9);
     this.turret.add(barrel);
 
-    // Paint edge on muzzle
-    const muzzleGeo = new THREE.TorusGeometry(0.8, 0.2, 16, 32);
-    const paintColor = 0x00ccff; // bright cyan paint for contrast
-    const muzzleMat = new THREE.MeshStandardMaterial({ 
-      color: paintColor, 
-      emissive: paintColor,
-      emissiveIntensity: 0.4,
-      roughness: 0.2
+    // Hopper (Paintball loader)
+    const hopperGeo = new THREE.CylinderGeometry(1.5, 0.5, 3, 16);
+    const hopperMat = new THREE.MeshStandardMaterial({ 
+      color: 0x00ccff, 
+      transparent: true, 
+      opacity: 0.8, 
+      roughness: 0.1 
     });
-    const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
-    muzzle.position.set(0, 0, -6); // at the tip of the barrel
-    this.turret.add(muzzle);
+    const hopper = new THREE.Mesh(hopperGeo, hopperMat);
+    hopper.position.set(0, 3.5, -1);
+    this.turret.add(hopper);
+    
+    // Hopper lid
+    const lidGeo = new THREE.SphereGeometry(1.5, 16, 16, 0, Math.PI*2, 0, Math.PI/2);
+    const lidMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    const lid = new THREE.Mesh(lidGeo, lidMat);
+    lid.position.set(0, 5, -1);
+    this.turret.add(lid);
+
+    // Air Tank (back)
+    const tankGeo = new THREE.CylinderGeometry(1.5, 1.5, 6, 16);
+    tankGeo.rotateX(Math.PI / 2);
+    const tankMat = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.7, roughness: 0.3 });
+    const tank = new THREE.Mesh(tankGeo, tankMat);
+    tank.position.set(0, -1, 4);
+    this.turret.add(tank);
+    
+    // Tank dome
+    const tankDomeGeo = new THREE.SphereGeometry(1.5, 16, 16);
+    const tankDome = new THREE.Mesh(tankDomeGeo, tankMat);
+    tankDome.position.set(0, -1, 7);
+    this.turret.add(tankDome);
 
     // Position the whole cannon assembly
     this.turret.position.set(0, -5, 48);
@@ -383,11 +411,13 @@ export class SceneManager {
     const pathCurve = new THREE.CatmullRomCurve3(points);
     const geometry = new THREE.TubeGeometry(pathCurve, Math.max(20, points.length * 2), 0.5, 8, false);
     
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x00ccff, 
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x0044aa, 
+      emissive: 0x0088ff,
+      emissiveIntensity: 0.8,
       transparent: true,
-      opacity: 0.3,
-      wireframe: true
+      opacity: 0.6,
+      roughness: 0.1
     });
 
     this.trajectoryLine = new THREE.Mesh(geometry, material);
