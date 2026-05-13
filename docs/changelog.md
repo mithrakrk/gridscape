@@ -7,6 +7,7 @@
 - Initialized React + Vite application.
 - `SceneManager.js` implementing the basic interior cube, target wall grid, and player turret using Three.js.
 - `GameCanvas.jsx` React component to wrap the Three.js renderer.
+- **Aesthetics Polish**: Added AI-generated museum textures (carpet floor, Louvre glass walls), GridHelpers to the ceiling and floor, bouncing gravity physics for paintballs hitting obstacles, and vibrant sine-wave floating animations for obstacle blocks.
 
 ### Changed
 - Refocused project goals to building the Gridscape 3D math puzzle game.

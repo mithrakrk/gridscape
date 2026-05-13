@@ -11,6 +11,9 @@ Current sprint focus: Setting up the web application skeleton and the Three.js b
 - [ ] Review UI and code architecture for final MVP polish.
 
 ## Done
+- [x] Enhance aesthetics with museum textures (Louvre, Carpet) and GridHelpers.
+- [x] Add floating animation and vibrant colors to obstacles.
+- [x] Implement paintball bounce physics upon hitting an obstacle.
 - [x] Implement level progression data.
 - [x] Add obstacles inside the room for higher levels.
 - [x] Build Explore Mode camera controls (arrow keys or WASD).

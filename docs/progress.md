@@ -6,6 +6,7 @@
 - Obstacles render dynamically as 3D blocks in the scene.
 - `TrajectorySolver` now correctly computes AABB collisions against obstacles, stopping trajectories mid-air.
 - "Level Complete" overlay integrated for transitioning between levels.
+- **Aesthetic Upgrades Complete**: Added Louvre museum glass walls, seamless carpet floor, colored floating blocks, ceiling/floor grids, and paintball bounce physics.
 
 ## Milestones
 - [x] Project Setup & Documentation

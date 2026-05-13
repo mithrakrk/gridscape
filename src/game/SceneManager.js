@@ -71,15 +71,34 @@ export class SceneManager {
     // The interior of the cube
     const geometry = new THREE.BoxGeometry(100, 100, 100);
     
+    const textureLoader = new THREE.TextureLoader();
+    const carpetTex = textureLoader.load('/carpet.png');
+    carpetTex.wrapS = THREE.RepeatWrapping;
+    carpetTex.wrapT = THREE.RepeatWrapping;
+    carpetTex.repeat.set(4, 4);
+
+    const louvreTex = textureLoader.load('/louvre.png');
+    louvreTex.colorSpace = THREE.SRGBColorSpace;
+
     // Museum materials
+    const glassMaterial = new THREE.MeshPhysicalMaterial({ 
+      color: 0xffffff, 
+      transmission: 0.9, 
+      opacity: 1, 
+      transparent: true, 
+      roughness: 0.05, 
+      ior: 1.5,
+      side: THREE.BackSide
+    });
+    
     const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xeaeaea, side: THREE.BackSide, roughness: 0.9 });
-    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x3d2314, side: THREE.BackSide, roughness: 0.1 }); // dark glossy wood
+    const floorMaterial = new THREE.MeshStandardMaterial({ map: carpetTex, side: THREE.BackSide, roughness: 0.8 }); // museum carpet
     const ceilingMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 1.0 });
     const targetWallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 0.5 }); // pristine white for art
 
     const materials = [
-      wallMaterial, // Right
-      wallMaterial, // Left
+      glassMaterial, // Right
+      glassMaterial, // Left
       ceilingMaterial, // Top
       floorMaterial, // Bottom
       targetWallMaterial, // Front (Target Wall)
@@ -89,11 +108,34 @@ export class SceneManager {
     this.cube = new THREE.Mesh(geometry, materials);
     this.scene.add(this.cube);
 
+    // Add Louvre backdrops outside the glass walls
+    const backdropGeo = new THREE.PlaneGeometry(200, 100);
+    const backdropMat = new THREE.MeshBasicMaterial({ map: louvreTex, side: THREE.DoubleSide });
+    
+    const leftBackdrop = new THREE.Mesh(backdropGeo, backdropMat);
+    leftBackdrop.position.set(-80, 0, 0); // Outside left wall
+    leftBackdrop.rotation.y = Math.PI / 2;
+    this.scene.add(leftBackdrop);
+
+    const rightBackdrop = new THREE.Mesh(backdropGeo, backdropMat);
+    rightBackdrop.position.set(80, 0, 0); // Outside right wall
+    rightBackdrop.rotation.y = -Math.PI / 2;
+    this.scene.add(rightBackdrop);
+
     // Target wall grid helper (matches 9x9 size)
     const gridHelper = new THREE.GridHelper(100, 9, 0x444444, 0x222222);
     gridHelper.rotation.x = Math.PI / 2;
     gridHelper.position.z = -49.9;
     this.scene.add(gridHelper);
+
+    // Add grids to ceiling and floor
+    const floorGrid = new THREE.GridHelper(100, 10, 0xffffff, 0x888888);
+    floorGrid.position.y = -49.9;
+    this.scene.add(floorGrid);
+
+    const ceilingGrid = new THREE.GridHelper(100, 10, 0x444444, 0xdddddd);
+    ceilingGrid.position.y = 49.9;
+    this.scene.add(ceilingGrid);
 
     // Grand Gold Frame around target wall
     const frameGeo = new THREE.BoxGeometry(104, 104, 2);
@@ -109,7 +151,6 @@ export class SceneManager {
     this.addWallLabel("-Y (Down)", 0, -49.8, 0, -Math.PI/2, 0, 0);
 
     // Setup the artwork texture mapping but hide it initially
-    const textureLoader = new THREE.TextureLoader();
     this.artworkTexture = textureLoader.load('/artwork.png');
     this.artworkTexture.colorSpace = THREE.SRGBColorSpace;
     
@@ -231,12 +272,21 @@ export class SceneManager {
       this.trajectoryLine = null;
     }
 
-    const obsMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.7, metalness: 0.2 });
+    const palette = [0xff0055, 0x00ccff, 0xffaa00, 0xaa00ff, 0x00ffaa];
 
-    levelData.obstacles.forEach(obs => {
+    levelData.obstacles.forEach((obs, index) => {
+      const color = palette[index % palette.length];
       const geo = new THREE.BoxGeometry(obs.w, obs.h, obs.d);
+      const obsMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.1 });
       const mesh = new THREE.Mesh(geo, obsMat);
       mesh.position.set(obs.x, obs.y, obs.z);
+      
+      mesh.userData = {
+        baseY: obs.y,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.002 + Math.random() * 0.001
+      };
+      
       this.obstaclesGroup.add(mesh);
     });
   }
@@ -363,6 +413,14 @@ export class SceneManager {
   }
 
   animate() {
+    // Float obstacles
+    const now = Date.now();
+    this.obstaclesGroup.children.forEach(mesh => {
+      if (mesh.userData.baseY !== undefined) {
+        mesh.position.y = mesh.userData.baseY + Math.sin(now * mesh.userData.speed + mesh.userData.phase) * 2;
+      }
+    });
+
     if (this.mode === 'explore') {
       this.updateExploreCamera();
     }
@@ -370,7 +428,37 @@ export class SceneManager {
     if (this.bulletAnim && this.mode === 'fire') {
       const { curve, onUpdate, onComplete } = this.bulletAnim;
       
-      if (this.bulletAnim.progress < 1.0) {
+      if (this.bulletAnim.falling) {
+        // Bounce and fall physics
+        this.bulletAnim.fallVelocity.y -= 0.03; // Gravity
+        this.bullet.position.add(this.bulletAnim.fallVelocity);
+        
+        // Bounce on floor
+        if (this.bullet.position.y <= -48) {
+          this.bullet.position.y = -48;
+          this.bulletAnim.fallVelocity.y *= -0.5; // lose energy
+          this.bulletAnim.fallVelocity.x *= 0.8;
+          this.bulletAnim.fallVelocity.z *= 0.8;
+          
+          if (Math.abs(this.bulletAnim.fallVelocity.y) < 0.1 && Math.abs(this.bulletAnim.fallVelocity.x) < 0.1) {
+            // Stop completely
+            if (onComplete) onComplete(this.bullet.position);
+            
+            this.camera.position.copy(this.originalCameraPos);
+            this.camera.lookAt(0, 0, -50);
+            this.scene.remove(this.bullet);
+            this.bulletAnim = null;
+          }
+        }
+        
+        if (this.bulletAnim) {
+          // Camera follow fall
+          const camPos = this.bullet.position.clone().add(new THREE.Vector3(0, 10, 20));
+          this.camera.position.lerp(camPos, 0.1);
+          this.camera.lookAt(this.bullet.position);
+          if (onUpdate) onUpdate(this.bullet.position);
+        }
+      } else if (this.bulletAnim.progress < 1.0) {
         // Apply physics: v = v0 + at
         // Fast forward if spacebar is held!
         const accelMultiplier = this.keys[" "] ? 5.0 : 1.0;
@@ -378,7 +466,7 @@ export class SceneManager {
         this.bulletAnim.progress += this.bulletAnim.velocity;
         
         // Clamp to end
-        if (this.bulletAnim.progress > 1.0) {
+        if (this.bulletAnim.progress >= 1.0) {
           this.bulletAnim.progress = 1.0;
         }
 
@@ -392,22 +480,36 @@ export class SceneManager {
         this.camera.lookAt(pt);
 
         if (onUpdate) onUpdate(pt);
-      } else {
-        const finalPt = curve.getPointAt(1.0);
         
-        if (finalPt.z > -49) {
-          // Hit an obstacle!
-          this.createExplosion(finalPt);
+        if (this.bulletAnim.progress >= 1.0) {
+          const finalPt = curve.getPointAt(1.0);
+          
+          if (finalPt.z > -49) {
+            // Hit an obstacle!
+            if (this.createExplosion) this.createExplosion(finalPt);
+            
+            // Transition to falling
+            this.bulletAnim.falling = true;
+            const prevPt = curve.getPointAt(0.99);
+            const dir = finalPt.clone().sub(prevPt).normalize();
+            
+            this.bulletAnim.fallVelocity = new THREE.Vector3(
+              dir.x * 0.5 + (Math.random() - 0.5) * 0.5,
+              Math.abs(dir.y * 0.2) + 0.5, // bounce up
+              -dir.z * 0.5 // reflect back
+            );
+          } else {
+            // Hit target wall
+            if (onComplete) onComplete(finalPt);
+            
+            // Reset camera
+            this.camera.position.copy(this.originalCameraPos);
+            this.camera.lookAt(0, 0, -50);
+            
+            this.scene.remove(this.bullet);
+            this.bulletAnim = null;
+          }
         }
-        
-        if (onComplete) onComplete(finalPt);
-        
-        // Reset camera
-        this.camera.position.copy(this.originalCameraPos);
-        this.camera.lookAt(0, 0, -50);
-        
-        this.scene.remove(this.bullet);
-        this.bulletAnim = null;
       }
     }
 
