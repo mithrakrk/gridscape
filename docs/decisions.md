@@ -22,3 +22,9 @@
 - **Date**: 2026-05-12
 - **Decision**: The MVP will have no backend.
 - **Reasoning**: Speeds up development and simplifies deployment. All level data and logic will run in the browser.
+
+### ADR-005: Trick-Shot Physics & Ricochet Mechanics
+- **Date**: 2026-05-13
+- **Context**: The user decided the game should support trick shots where paintballs bounce off obstacles to reach the target wall, rather than failing upon hitting an obstacle.
+- **Decision**: Update `TrajectorySolver.js` to compute ricochets step-by-step. The solver will track an axis-flip state (`flipX, flipY, flipZ`) that inverts upon boundary or obstacle collision.
+- **Consequences**: This adds complexity to the solver and makes the trajectory preview dynamic and jagged, enhancing the puzzle gameplay significantly.

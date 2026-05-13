@@ -4,8 +4,9 @@
 Current sprint focus: Setting up the web application skeleton and the Three.js basic scene.
 
 ## To Do
+- [ ] Implement trick-shot ricochet physics in `TrajectorySolver.js` (see ADR-005).
 - [ ] Add sound effects and background music.
-- [ ] Refine the visual effects for when a bullet hits an obstacle.
+- [ ] Refine the visual effects for when a bullet hits an obstacle or wall.
 
 ## In Progress
 - [ ] Review UI and code architecture for final MVP polish.
