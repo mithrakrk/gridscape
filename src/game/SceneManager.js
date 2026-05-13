@@ -153,11 +153,45 @@ export class SceneManager {
     // Setup the artwork texture mapping but hide it initially
     this.artworkTexture = textureLoader.load('/artwork.png');
     this.artworkTexture.colorSpace = THREE.SRGBColorSpace;
+    this.loadArtworkData();
     
     // Group to hold all painted tiles
     this.paintGroup = new THREE.Group();
     this.paintGroup.position.z = -49.8; // slightly in front of back wall and grid
     this.scene.add(this.paintGroup);
+  }
+
+  loadArtworkData() {
+    const img = new Image();
+    img.src = '/artwork.png';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      this.artworkPixels = ctx.getImageData(0, 0, img.width, img.height);
+    };
+  }
+
+  getArtworkColor(x, y) {
+    if (!this.artworkPixels) return new THREE.Color(0x00ccff); // default
+    const u = (x + 50) / 100;
+    const v = (y + 50) / 100;
+    // Y is inverted in canvas vs 3D UV
+    const px = Math.floor(u * this.artworkPixels.width);
+    const py = Math.floor((1 - v) * this.artworkPixels.height);
+    
+    // clamp
+    const safeX = Math.max(0, Math.min(this.artworkPixels.width - 1, px));
+    const safeY = Math.max(0, Math.min(this.artworkPixels.height - 1, py));
+    
+    const idx = (safeY * this.artworkPixels.width + safeX) * 4;
+    const r = this.artworkPixels.data[idx];
+    const g = this.artworkPixels.data[idx+1];
+    const b = this.artworkPixels.data[idx+2];
+    
+    return new THREE.Color(r/255, g/255, b/255);
   }
 
   addWallLabel(text, x, y, z, rotX, rotY, rotZ) {
@@ -298,29 +332,20 @@ export class SceneManager {
       this.bullet.material.dispose();
     }
     
-    // Multi-colored Shader Paintball
-    const geo = new THREE.SphereGeometry(2, 32, 32); 
-    const mat = new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec3 vNormal;
-        void main() {
-          vNormal = normal;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vNormal;
-        void main() {
-          vec3 color1 = vec3(1.0, 0.0, 0.5); // pink
-          vec3 color2 = vec3(0.0, 0.8, 1.0); // cyan
-          vec3 color3 = vec3(1.0, 0.8, 0.0); // yellow
-          float mix1 = (vNormal.x + 1.0) * 0.5;
-          float mix2 = (vNormal.y + 1.0) * 0.5;
-          vec3 finalColor = mix(color1, color2, mix1);
-          finalColor = mix(finalColor, color3, mix2);
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      `
+    const lastPoint = points[points.length - 1];
+    let hitColor = new THREE.Color(0x00ccff);
+    if (lastPoint.z <= -49) {
+      hitColor = this.getArtworkColor(lastPoint.x, lastPoint.y);
+    }
+
+    const geo = new THREE.CylinderGeometry(0.5, 0.5, 3, 16);
+    geo.rotateX(Math.PI / 2); // point forward
+    const mat = new THREE.MeshStandardMaterial({ 
+      color: hitColor, 
+      emissive: hitColor, 
+      emissiveIntensity: 0.8,
+      roughness: 0.2, 
+      metalness: 0.8 
     });
     this.bullet = new THREE.Mesh(geo, mat);
     this.scene.add(this.bullet);
@@ -337,7 +362,8 @@ export class SceneManager {
       curve: curve,
       progress: 0,           // normalized distance (0.0 to 1.0)
       velocity: 0,           // starts at 0 speed
-      acceleration: 0.00004, // constant physical acceleration (takes ~3 seconds to cross)
+      acceleration: 0.00004, // constant physical acceleration
+      cameraTarget: this.camera.position.clone(),
       onUpdate: onUpdate,
       onComplete: onComplete
     };
@@ -350,21 +376,21 @@ export class SceneManager {
       this.trajectoryLine.material.dispose();
     }
 
-    const material = new THREE.LineBasicMaterial({
-      color: 0xf5f5dc, // translucent beige
-      linewidth: 1,    // thin line
-      transparent: true,
-      opacity: 0.3
-    });
-
     const startPoint = new THREE.Vector3(0, -5, 48); // Turret muzzle
-    
-    // Use the iterative physics solver to trace the exact curve
     const obstacles = this.currentLevel ? this.currentLevel.obstacles : [];
     const points = TrajectorySolver.calculate(analysis, startPoint, -50, obstacles);
 
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    this.trajectoryLine = new THREE.Line(geometry, material);
+    const pathCurve = new THREE.CatmullRomCurve3(points);
+    const geometry = new THREE.TubeGeometry(pathCurve, Math.max(20, points.length * 2), 0.5, 8, false);
+    
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x00ccff, 
+      transparent: true,
+      opacity: 0.3,
+      wireframe: true
+    });
+
+    this.trajectoryLine = new THREE.Mesh(geometry, material);
     this.scene.add(this.trajectoryLine);
     
     return points;
@@ -452,10 +478,11 @@ export class SceneManager {
         }
         
         if (this.bulletAnim) {
-          // Camera follow fall
+          // Camera follow fall smoothly
           const camPos = this.bullet.position.clone().add(new THREE.Vector3(0, 10, 20));
-          this.camera.position.lerp(camPos, 0.1);
-          this.camera.lookAt(this.bullet.position);
+          this.camera.position.lerp(camPos, 0.05);
+          this.bulletAnim.cameraTarget.lerp(this.bullet.position, 0.1);
+          this.camera.lookAt(this.bulletAnim.cameraTarget);
           if (onUpdate) onUpdate(this.bullet.position);
         }
       } else if (this.bulletAnim.progress < 1.0) {
@@ -470,14 +497,16 @@ export class SceneManager {
           this.bulletAnim.progress = 1.0;
         }
 
-        // getPointAt perfectly normalizes physical distance along the arc
         const pt = curve.getPointAt(this.bulletAnim.progress);
+        const nextPt = curve.getPointAt(Math.min(1.0, this.bulletAnim.progress + 0.01));
         this.bullet.position.copy(pt);
+        this.bullet.lookAt(nextPt); // physically point forward
         
-        // Camera follows the bullet slightly behind and above
-        const camPos = pt.clone().add(new THREE.Vector3(0, 5, 15));
-        this.camera.position.lerp(camPos, 0.2);
-        this.camera.lookAt(pt);
+        // Camera smooth follow
+        const camPos = pt.clone().add(new THREE.Vector3(0, 8, 20));
+        this.camera.position.lerp(camPos, 0.05);
+        this.bulletAnim.cameraTarget.lerp(pt, 0.1);
+        this.camera.lookAt(this.bulletAnim.cameraTarget);
 
         if (onUpdate) onUpdate(pt);
         
