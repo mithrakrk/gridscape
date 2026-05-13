@@ -242,25 +242,6 @@ export class SceneManager {
     barrel.position.set(0, 0.5, -9);
     this.turret.add(barrel);
 
-    // Hopper (Paintball loader)
-    const hopperGeo = new THREE.CylinderGeometry(1.5, 0.5, 3, 16);
-    const hopperMat = new THREE.MeshStandardMaterial({ 
-      color: 0x00ccff, 
-      transparent: true, 
-      opacity: 0.8, 
-      roughness: 0.1 
-    });
-    const hopper = new THREE.Mesh(hopperGeo, hopperMat);
-    hopper.position.set(0, 3.5, -1);
-    this.turret.add(hopper);
-    
-    // Hopper lid
-    const lidGeo = new THREE.SphereGeometry(1.5, 16, 16, 0, Math.PI*2, 0, Math.PI/2);
-    const lidMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-    const lid = new THREE.Mesh(lidGeo, lidMat);
-    lid.position.set(0, 5, -1);
-    this.turret.add(lid);
-
     // Air Tank (back)
     const tankGeo = new THREE.CylinderGeometry(1.5, 1.5, 6, 16);
     tankGeo.rotateX(Math.PI / 2);
