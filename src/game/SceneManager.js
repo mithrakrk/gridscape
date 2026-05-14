@@ -314,11 +314,7 @@ export class SceneManager {
 
   setMode(mode) {
     this.mode = mode;
-    if (mode === 'fire') {
-      // Return camera to turret
-      this.camera.position.copy(this.originalCameraPos);
-      this.camera.lookAt(0, 0, -50);
-    }
+    // Camera is automatically synced to the gun in animate() for fire mode!
   }
 
   updateTurretConfig(config) {
@@ -520,6 +516,15 @@ export class SceneManager {
 
     if (this.mode === 'explore') {
       this.updateExploreCamera();
+    } else if (this.mode === 'fire' && !this.bulletAnim && this.turret) {
+      // FPS POV: Camera sits slightly behind and above the gun, tracking its exact pitch and yaw
+      this.camera.position.set(this.turretX, this.turretY + 3, 52);
+      this.camera.rotation.set(
+        THREE.MathUtils.degToRad(this.turretPitch),
+        THREE.MathUtils.degToRad(-this.turretYaw),
+        0,
+        'YXZ'
+      );
     }
 
     if (this.bulletAnim && this.mode === 'fire') {
@@ -541,8 +546,6 @@ export class SceneManager {
             // Stop completely
             if (onComplete) onComplete(this.bullet.position);
             
-            this.camera.position.copy(this.originalCameraPos);
-            this.camera.lookAt(0, 0, -50);
             this.scene.remove(this.bullet);
             this.bulletAnim = null;
           }
@@ -601,10 +604,6 @@ export class SceneManager {
           } else {
             // Hit target wall
             if (onComplete) onComplete(finalPt);
-            
-            // Reset camera
-            this.camera.position.copy(this.originalCameraPos);
-            this.camera.lookAt(0, 0, -50);
             
             this.scene.remove(this.bullet);
             this.bulletAnim = null;
