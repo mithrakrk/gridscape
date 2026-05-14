@@ -281,11 +281,15 @@ export class SceneManager {
     // Scale it down!
     this.turret.scale.set(0.5, 0.5, 0.5);
 
-    // FPS View: Attach turret to the camera so it acts like a weapon in your hands!
-    this.turret.position.set(1.5, -2.5, -5); // Place it down, forward, and slightly to the RIGHT so you can see it!
+    // Sniper Scope View: Position the gun so the camera is looking exactly down the top of it.
+    // Place the gun slightly below the camera
+    this.turret.position.set(0, -2, 0); 
     this.turret.rotation.set(0, 0, 0); // Straight ahead relative to camera
     
     this.camera.add(this.turret);
+    this.camera.fov = 45; // Zoom in for a sniper scope effect
+    this.camera.updateProjectionMatrix();
+    
     this.scene.add(this.camera);
   }
 
@@ -301,6 +305,7 @@ export class SceneManager {
 
   setupControls() {
     this.keys = { w:false, a:false, s:false, d:false, q:false, e:false, arrowup:false, arrowdown:false, arrowleft:false, arrowright:false, shift:false, " ":false };
+    this.isMouseDown = false;
     
     window.addEventListener('keydown', (e) => {
       const k = e.key.toLowerCase();
@@ -314,13 +319,26 @@ export class SceneManager {
       if (e.key === " ") this.keys[" "] = false;
     });
 
+    window.addEventListener('mousedown', (e) => {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        this.isMouseDown = true;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      this.isMouseDown = false;
+    });
+
     window.addEventListener('mousemove', (e) => {
-      if (this.mode !== 'fire') return;
-      const ndcX = (e.clientX / window.innerWidth) * 2 - 1;
-      const ndcY = -(e.clientY / window.innerHeight) * 2 + 1;
+      if (this.mode !== 'fire' || !this.isMouseDown) return;
       
-      this.turretYaw = -ndcX * 60; 
-      this.turretPitch = ndcY * 60; 
+      // Click and drag to aim
+      const sensitivity = 0.2;
+      this.turretYaw -= e.movementX * sensitivity; 
+      this.turretPitch -= e.movementY * sensitivity; 
+      
+      // Clamp pitch to avoid flipping over backwards
+      this.turretPitch = Math.max(-85, Math.min(85, this.turretPitch));
       
       // Update camera rotation directly
       this.camera.rotation.set(
@@ -589,6 +607,9 @@ export class SceneManager {
             // Stop completely
             if (onComplete) onComplete(this.bullet.position);
             
+            // Reset camera
+            this.camera.fov = 45; // Back to scope zoom
+            this.camera.updateProjectionMatrix();
             this.scene.remove(this.bullet);
             this.bulletAnim = null;
           }
@@ -596,6 +617,10 @@ export class SceneManager {
         
         if (this.bulletAnim) {
           // Camera follow fall smoothly
+          // Widen FOV for cinematic bullet cam
+          this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, 75, 0.1);
+          this.camera.updateProjectionMatrix();
+
           const camPos = this.bullet.position.clone().add(new THREE.Vector3(0, 10, 20));
           this.camera.position.lerp(camPos, 0.05);
           this.bulletAnim.cameraTarget.lerp(this.bullet.position, 0.1);
@@ -620,6 +645,10 @@ export class SceneManager {
         this.bullet.lookAt(nextPt); // physically point forward
         
         // Camera smooth follow
+        // Widen FOV for cinematic bullet cam
+        this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, 75, 0.1);
+        this.camera.updateProjectionMatrix();
+
         const camPos = pt.clone().add(new THREE.Vector3(0, 8, 20));
         this.camera.position.lerp(camPos, 0.05);
         this.bulletAnim.cameraTarget.lerp(pt, 0.1);
@@ -648,6 +677,8 @@ export class SceneManager {
             // Hit target wall
             if (onComplete) onComplete(finalPt);
             
+            this.camera.fov = 45; // Back to scope zoom
+            this.camera.updateProjectionMatrix();
             this.scene.remove(this.bullet);
             this.bulletAnim = null;
           }
