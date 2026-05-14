@@ -343,18 +343,10 @@ export class SceneManager {
       // Update camera rotation directly
       this.camera.rotation.set(
         THREE.MathUtils.degToRad(this.turretPitch),
-        THREE.MathUtils.degToRad(-this.turretYaw),
+        THREE.MathUtils.degToRad(this.turretYaw), // Fixed inverted X-axis
         0,
         'YXZ'
       );
-      
-      if (this.currentAnalysis) {
-        const now = Date.now();
-        if (now - this.lastPreviewTime > 150) {
-          this.lastPreviewTime = now;
-          this.drawTrajectory(this.currentAnalysis);
-        }
-      }
     });
   }
 
@@ -583,14 +575,7 @@ export class SceneManager {
       // FPS POV: Camera is the player's head, placed at the turret position
       this.camera.position.set(this.turretX, this.turretY, 48);
 
-      // Update preview if moved
-      if (this.currentAnalysis && (this.keys.w || this.keys.s || this.keys.a || this.keys.d || this.keys.arrowup || this.keys.arrowdown || this.keys.arrowleft || this.keys.arrowright)) {
-        const now = Date.now();
-        if (now - this.lastPreviewTime > 150) {
-          this.lastPreviewTime = now;
-          this.drawTrajectory(this.currentAnalysis);
-        }
-      }
+      // No longer updating preview path on movement, only on FIRE!
     }
 
     if (this.bulletAnim && this.mode === 'fire') {
@@ -616,6 +601,10 @@ export class SceneManager {
             this.camera.fov = 45; // Back to scope zoom
             this.camera.updateProjectionMatrix();
             this.scene.remove(this.bullet);
+            if (this.trajectoryLine) {
+              this.scene.remove(this.trajectoryLine);
+              this.trajectoryLine = null;
+            }
             this.bulletAnim = null;
             if (this.turret) this.turret.visible = true; // Show gun again
           }
@@ -686,6 +675,10 @@ export class SceneManager {
             this.camera.fov = 45; // Back to scope zoom
             this.camera.updateProjectionMatrix();
             this.scene.remove(this.bullet);
+            if (this.trajectoryLine) {
+              this.scene.remove(this.trajectoryLine);
+              this.trajectoryLine = null;
+            }
             this.bulletAnim = null;
             if (this.turret) this.turret.visible = true; // Show gun again
           }

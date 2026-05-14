@@ -18,8 +18,8 @@ export function FireModeUI({ onPreview, onFire, isFiring, onConfigChange }) {
     }
   }, [config, onConfigChange]);
 
-  const handleParse = () => {
-    // Analyze the three acceleration formulas
+  // Auto-analyze formulas when they change
+  useEffect(() => {
     const resX = FormulaEngine.analyze(config.ax);
     const resY = FormulaEngine.analyze(config.ay);
     const resZ = FormulaEngine.analyze(config.az);
@@ -35,11 +35,10 @@ export function FireModeUI({ onPreview, onFire, isFiring, onConfigChange }) {
         config: config
       };
       setAnalysis(combinedAnalysis);
-      onPreview(combinedAnalysis);
     } else {
       setAnalysis({ valid: false, error: 'Invalid formula syntax' });
     }
-  };
+  }, [config]);
 
   const handleChange = (key, value) => {
     setConfig(prev => ({ ...prev, [key]: value }));
@@ -78,10 +77,6 @@ export function FireModeUI({ onPreview, onFire, isFiring, onConfigChange }) {
         <span style={{ color: '#3366ff', fontWeight: 'bold' }}>Az:</span>
         <input type="text" value={config.az} onChange={e => handleChange('az', e.target.value)} style={{ flex: 1, padding: '8px', background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '4px', fontFamily: 'monospace' }} />
       </div>
-
-      <button onClick={handleParse} style={{ marginTop: '10px', padding: '10px', cursor: 'pointer', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '6px', fontWeight: 'bold' }}>
-        Preview Trajectory
-      </button>
 
       <button 
         onClick={() => analysis?.valid && onFire(analysis)} 
