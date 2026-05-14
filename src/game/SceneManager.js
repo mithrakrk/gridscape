@@ -460,6 +460,11 @@ export class SceneManager {
       onUpdate: onUpdate,
       onComplete: onComplete
     };
+
+    // Hide the gun model so it doesn't float in front of the camera during bullet cam!
+    if (this.turret) {
+      this.turret.visible = false;
+    }
   }
 
   drawTrajectory(analysis) {
@@ -612,6 +617,7 @@ export class SceneManager {
             this.camera.updateProjectionMatrix();
             this.scene.remove(this.bullet);
             this.bulletAnim = null;
+            if (this.turret) this.turret.visible = true; // Show gun again
           }
         }
         
@@ -681,6 +687,7 @@ export class SceneManager {
             this.camera.updateProjectionMatrix();
             this.scene.remove(this.bullet);
             this.bulletAnim = null;
+            if (this.turret) this.turret.visible = true; // Show gun again
           }
         }
       }
