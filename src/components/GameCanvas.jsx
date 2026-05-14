@@ -58,6 +58,11 @@ export const GameCanvas = forwardRef((props, ref) => {
       if (sceneManagerRef.current) {
         sceneManagerRef.current.addPaintCells(cells, gridSize);
       }
+    },
+    updateTurretConfig: (config) => {
+      if (sceneManagerRef.current) {
+        sceneManagerRef.current.updateTurretConfig(config);
+      }
     }
   }));
 

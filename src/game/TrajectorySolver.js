@@ -2,96 +2,125 @@ import * as THREE from 'three';
 
 export class TrajectorySolver {
   /**
-   * Calculates the flight path of the paint shot based on the math formula.
-   * @param {Object} analysis - The compiled math.js result from FormulaEngine
+   * Calculates the flight path of the paint shot based on Newtonian physics.
+   * @param {Object} analysis - The compiled math.js result with config
    * @param {THREE.Vector3} start - The origin point (turret)
    * @param {number} targetZ - The z-coordinate of the target wall
    * @param {Array} obstacles - Array of obstacle bounding boxes
    * @returns {THREE.Vector3[]} Array of points defining the trajectory curve
    */
   static calculate(analysis, start, targetZ, obstacles = []) {
-    const points = [];
-    const steps = 400; // Increased resolution for smoother curve and slower animation
-    const zDistance = start.z - targetZ;
+    const config = analysis.config || { pitch: 0, yaw: 0, power: 50 };
+    const points = [start.clone()];
+    const dt = 0.05; // simulation time step
     
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps; // Normalized progress from 0.0 to 1.0
-      const currentZ = start.z - (zDistance * t);
+    // Convert pitch and yaw to radians
+    const pitchRad = THREE.MathUtils.degToRad(config.pitch || 0);
+    const yawRad = THREE.MathUtils.degToRad(config.yaw || 0);
+    const power = config.power || 50;
+    
+    // Initial velocity vector
+    // Z is forward (towards -50), so negative Z
+    // Yaw rotates around Y axis (Left/Right)
+    // Pitch rotates around X axis (Up/Down)
+    const v = new THREE.Vector3(
+      Math.sin(yawRad) * Math.cos(pitchRad),
+      Math.sin(pitchRad),
+      -Math.cos(yawRad) * Math.cos(pitchRad)
+    ).normalize().multiplyScalar(power);
+    
+    let p = start.clone();
+    let t = 0;
+    const maxSteps = 1000;
+    
+    let flipX = 1;
+    let flipY = 1;
+    let flipZ = 1;
+
+    for (let i = 0; i < maxSteps; i++) {
+      const scope = { t: t, x: p.x, y: p.y, z: p.z, vx: v.x, vy: v.y, vz: v.z };
       
-      // Map 't' to the formula's variables to create interesting curves.
-      // x acts as a symmetric sweep: -10 to +10
-      // y acts as a linear sweep: 0 to 10
-      // z acts as the actual depth: 48 to -50
-      const scope = { 
-        x: (t - 0.5) * 20, 
-        y: t * 10,         
-        z: currentZ / 10 
-      };
-      
-      let offsetX = 0;
-      let offsetY = 0;
-      
+      let ax = 0, ay = 0, az = 0;
       try {
-        const val = analysis.compiled.evaluate(scope);
-        
-        if (typeof val === 'number' && !isNaN(val)) {
-          // Determine how the value affects the path based on which variables were used.
-          // If they used 'x', we apply the result to the horizontal axis.
-          // If they used 'y', we apply it to the vertical axis.
-          // If they used both or neither, we mix it.
-          
-          if (analysis.variables.includes('x')) {
-            offsetX = val;
-          }
-          if (analysis.variables.includes('y')) {
-            offsetY = val;
-          }
-          if (analysis.variables.includes('z') || analysis.variables.length === 0) {
-            // Apply to both to create spirals or diagonal shifts
-            if (!analysis.variables.includes('x')) offsetX = val;
-            if (!analysis.variables.includes('y')) offsetY = val;
-          }
-        }
-      } catch (e) {
-        // Silently ignore evaluation errors per step (e.g., divide by zero)
+        if (analysis.xCompiled) ax = analysis.xCompiled.evaluate(scope) || 0;
+        if (analysis.yCompiled) ay = analysis.yCompiled.evaluate(scope) || 0;
+        if (analysis.zCompiled) az = analysis.zCompiled.evaluate(scope) || 0;
+      } catch (e) {}
+
+      // Apply acceleration to velocity
+      v.x += ax * dt * flipX;
+      v.y += ay * dt * flipY;
+      v.z += az * dt * flipZ;
+      
+      // Apply velocity to position
+      let nextX = p.x + v.x * dt;
+      let nextY = p.y + v.y * dt;
+      let nextZ = p.z + v.z * dt;
+      
+      // Wall collisions (bounce)
+      if (nextX > 50 || nextX < -50) { 
+        flipX *= -1; 
+        v.x *= -0.8; // Lose energy
+        nextX = p.x + v.x * dt; 
+      }
+      if (nextY > 50 || nextY < -50) { 
+        flipY *= -1; 
+        v.y *= -0.8; 
+        nextY = p.y + v.y * dt; 
+      }
+      if (nextZ > 50) { 
+        flipZ *= -1; 
+        v.z *= -0.8; 
+        nextZ = p.z + v.z * dt; 
+      } 
+      
+      // Target wall
+      if (nextZ <= -49.5) {
+        points.push(new THREE.Vector3(nextX, nextY, -50));
+        break;
       }
 
-      // We scale the offset down slightly, AND we multiply by `t` (progress)
-      // This ensures that at t=0, the offset is exactly 0 and it perfectly anchors to the cannon!
-      const scaleFactor = 0.5 * Math.pow(t, 1.5);
-      
-      const rawX = start.x + (offsetX * scaleFactor);
-      const rawY = start.y + (offsetY * scaleFactor);
-
-      // Bounce mechanics: Reflect values back into the -50 to 50 bounds
-      const pingPong = (val, min, max) => {
-        const range = max - min;
-        let normalized = val - min;
-        const numBounces = Math.floor(Math.abs(normalized) / range);
-        normalized = Math.abs(normalized) % (2 * range);
-        if (normalized > range) {
-          normalized = 2 * range - normalized;
-        }
-        return normalized + min;
-      };
-
-      const finalX = pingPong(rawX, -50, 50);
-      const finalY = pingPong(rawY, -50, 50);
-
-      points.push(new THREE.Vector3(finalX, finalY, currentZ));
-
-      // Check for collisions with obstacles
-      let hitObstacle = false;
+      // Obstacle collisions
+      let hitObs = null;
       for (const obs of obstacles) {
-        if (Math.abs(finalX - obs.x) <= obs.w / 2 &&
-            Math.abs(finalY - obs.y) <= obs.h / 2 &&
-            Math.abs(currentZ - obs.z) <= obs.d / 2) {
-          hitObstacle = true;
+        if (Math.abs(nextX - obs.x) <= obs.w / 2 &&
+            Math.abs(nextY - obs.y) <= obs.h / 2 &&
+            Math.abs(nextZ - obs.z) <= obs.d / 2) {
+          hitObs = obs;
           break;
         }
       }
 
-      if (hitObstacle) {
+      if (hitObs) {
+        const dx = (p.x - hitObs.x) / (hitObs.w / 2);
+        const dy = (p.y - hitObs.y) / (hitObs.h / 2);
+        const dz = (p.z - hitObs.z) / (hitObs.d / 2);
+        
+        const adx = Math.abs(dx);
+        const ady = Math.abs(dy);
+        const adz = Math.abs(dz);
+
+        if (adx >= ady && adx >= adz) {
+          flipX *= -1;
+          v.x *= -0.8;
+          nextX = p.x; 
+        } else if (ady >= adx && ady >= adz) {
+          flipY *= -1;
+          v.y *= -0.8;
+          nextY = p.y;
+        } else {
+          flipZ *= -1;
+          v.z *= -0.8;
+          nextZ = p.z;
+        }
+      }
+
+      p.set(nextX, nextY, nextZ);
+      points.push(p.clone());
+      t += dt;
+
+      // Stop if it runs out of energy (too slow)
+      if (v.length() < 0.5) {
         break;
       }
     }

@@ -26,10 +26,7 @@ export class FormulaEngine {
         }
       });
       
-      if (variables.size === 0) {
-        return { valid: false, error: 'Formula must contain at least one of x, y, z.' };
-      }
-      
+      // Constant formulas like '0' or '-9.8' are perfectly valid for Newtonian physics!
       return {
         valid: true,
         variables: Array.from(variables),

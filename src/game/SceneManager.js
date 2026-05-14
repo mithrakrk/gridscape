@@ -296,6 +296,21 @@ export class SceneManager {
     }
   }
 
+  updateTurretConfig(config) {
+    this.turretConfig = config;
+    if (this.turret) {
+      this.turret.position.set(config.gunX, config.gunY, 48);
+      // Pitch revolves around X (Up/Down)
+      // Yaw revolves around Y (Left/Right)
+      this.turret.rotation.set(
+        THREE.MathUtils.degToRad(config.pitch),
+        THREE.MathUtils.degToRad(-config.yaw), // negative yaw to aim left/right correctly
+        0,
+        'YXZ'
+      );
+    }
+  }
+
   loadLevel(levelData) {
     this.currentLevel = levelData;
     
@@ -369,9 +384,9 @@ export class SceneManager {
 
     this.bulletAnim = {
       curve: curve,
-      progress: 0,           // normalized distance (0.0 to 1.0)
-      velocity: 0,           // starts at 0 speed
-      acceleration: 0.00004, // constant physical acceleration
+      progress: 0,           
+      velocity: 0.005,       // constant speed along the path since path handles the physics arc!
+      acceleration: 0,
       cameraTarget: this.camera.position.clone(),
       onUpdate: onUpdate,
       onComplete: onComplete
@@ -385,7 +400,8 @@ export class SceneManager {
       this.trajectoryLine.material.dispose();
     }
 
-    const startPoint = new THREE.Vector3(0, -5, 48); // Turret muzzle
+    const config = analysis.config || this.turretConfig || { gunX: 0, gunY: -5, pitch: 0, yaw: 0, power: 50 };
+    const startPoint = new THREE.Vector3(config.gunX, config.gunY, 48); // Turret muzzle dynamic position
     const obstacles = this.currentLevel ? this.currentLevel.obstacles : [];
     const points = TrajectorySolver.calculate(analysis, startPoint, -50, obstacles);
 

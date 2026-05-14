@@ -37,6 +37,12 @@ function App() {
     }
   };
 
+  const handleConfigChange = (config) => {
+    if (canvasRef.current) {
+      canvasRef.current.updateTurretConfig(config);
+    }
+  };
+
   const handleFire = (analysis) => {
     if (canvasRef.current && !isFiring) {
       const points = canvasRef.current.previewTrajectory(analysis);
@@ -186,7 +192,7 @@ function App() {
 
       {mode === 'fire' && (
         <>
-          <FireModeUI onPreview={handlePreview} onFire={handleFire} isFiring={isFiring} />
+          <FireModeUI onPreview={handlePreview} onFire={handleFire} isFiring={isFiring} onConfigChange={handleConfigChange} />
           {isFiring && (
             <div style={{ position: 'absolute', bottom: '100px', left: '50%', transform: 'translateX(-50%)', color: '#fff', background: 'rgba(0,0,0,0.8)', padding: '10px 20px', borderRadius: '8px' }}>
               Hold <b>SPACEBAR</b> to fast-forward!
