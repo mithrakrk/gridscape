@@ -281,9 +281,12 @@ export class SceneManager {
     // Scale it down!
     this.turret.scale.set(0.5, 0.5, 0.5);
 
-    // Position the whole cannon assembly
-    this.turret.position.set(this.turretX, this.turretY, 48);
-    this.scene.add(this.turret);
+    // FPS View: Attach turret to the camera so it acts like a weapon in your hands!
+    this.turret.position.set(1.5, -2.5, -5); // Place it down, forward, and slightly to the RIGHT so you can see it!
+    this.turret.rotation.set(0, 0, 0); // Straight ahead relative to camera
+    
+    this.camera.add(this.turret);
+    this.scene.add(this.camera);
   }
 
   setupCompass() {
@@ -309,6 +312,31 @@ export class SceneManager {
       const k = e.key.toLowerCase();
       if(this.keys.hasOwnProperty(k)) this.keys[k] = false;
       if (e.key === " ") this.keys[" "] = false;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (this.mode !== 'fire') return;
+      const ndcX = (e.clientX / window.innerWidth) * 2 - 1;
+      const ndcY = -(e.clientY / window.innerHeight) * 2 + 1;
+      
+      this.turretYaw = -ndcX * 60; 
+      this.turretPitch = ndcY * 60; 
+      
+      // Update camera rotation directly
+      this.camera.rotation.set(
+        THREE.MathUtils.degToRad(this.turretPitch),
+        THREE.MathUtils.degToRad(-this.turretYaw),
+        0,
+        'YXZ'
+      );
+      
+      if (this.currentAnalysis) {
+        const now = Date.now();
+        if (now - this.lastPreviewTime > 150) {
+          this.lastPreviewTime = now;
+          this.drawTrajectory(this.currentAnalysis);
+        }
+      }
     });
   }
 
@@ -434,7 +462,11 @@ export class SceneManager {
     };
     analysis.config = config;
 
-    const startPoint = new THREE.Vector3(config.gunX, config.gunY, 48); 
+    // Calculate exact muzzle position in world space for physics
+    this.camera.updateMatrixWorld(true);
+    const startPoint = new THREE.Vector3(0, -1.75, -9.5); // exact barrel tip relative to camera
+    startPoint.applyMatrix4(this.camera.matrixWorld);
+
     const obstacles = this.currentLevel ? this.currentLevel.obstacles : [];
     const points = TrajectorySolver.calculate(analysis, startPoint, -50, obstacles);
 
@@ -516,15 +548,26 @@ export class SceneManager {
 
     if (this.mode === 'explore') {
       this.updateExploreCamera();
-    } else if (this.mode === 'fire' && !this.bulletAnim && this.turret) {
-      // FPS POV: Camera sits slightly behind and above the gun, tracking its exact pitch and yaw
-      this.camera.position.set(this.turretX, this.turretY + 3, 52);
-      this.camera.rotation.set(
-        THREE.MathUtils.degToRad(this.turretPitch),
-        THREE.MathUtils.degToRad(-this.turretYaw),
-        0,
-        'YXZ'
-      );
+    } else if (this.mode === 'fire' && !this.bulletAnim) {
+      if (!document.activeElement || document.activeElement.tagName !== 'INPUT') {
+        const speed = 1.0;
+        if (this.keys.w || this.keys.arrowup) this.turretY = Math.min(45, this.turretY + speed);
+        if (this.keys.s || this.keys.arrowdown) this.turretY = Math.max(-45, this.turretY - speed);
+        if (this.keys.a || this.keys.arrowleft) this.turretX = Math.max(-45, this.turretX - speed);
+        if (this.keys.d || this.keys.arrowright) this.turretX = Math.min(45, this.turretX + speed);
+      }
+
+      // FPS POV: Camera is the player's head, placed at the turret position
+      this.camera.position.set(this.turretX, this.turretY, 48);
+
+      // Update preview if moved
+      if (this.currentAnalysis && (this.keys.w || this.keys.s || this.keys.a || this.keys.d || this.keys.arrowup || this.keys.arrowdown || this.keys.arrowleft || this.keys.arrowright)) {
+        const now = Date.now();
+        if (now - this.lastPreviewTime > 150) {
+          this.lastPreviewTime = now;
+          this.drawTrajectory(this.currentAnalysis);
+        }
+      }
     }
 
     if (this.bulletAnim && this.mode === 'fire') {
