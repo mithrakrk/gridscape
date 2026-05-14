@@ -36,7 +36,15 @@ export class SceneManager {
     this.scene.add(this.particlesGroup);
 
     this.raycaster = new THREE.Raycaster();
-    this.centerCoord = new THREE.Vector2(0, 0);
+    this.mouse = new THREE.Vector2();
+
+    this.turretPitch = 0;
+    this.turretYaw = 0;
+    this.turretX = 0;
+    this.turretY = -5;
+    this.turretConfig = { power: 50, ax: '0', ay: '-9.8', az: '0' };
+    this.currentAnalysis = null;
+    this.lastPreviewTime = 0;
 
     this.animate = this.animate.bind(this);
     this.renderer.setAnimationLoop(this.animate);
@@ -256,8 +264,25 @@ export class SceneManager {
     tankDome.position.set(0, -1, 7);
     this.turret.add(tankDome);
 
+    // Hopper (Paintball loader)
+    const hopperGeo = new THREE.CylinderGeometry(1.5, 0.5, 3, 16);
+    const hopperMat = new THREE.MeshStandardMaterial({ color: 0x00ccff, transparent: true, opacity: 0.8, roughness: 0.1 });
+    const hopper = new THREE.Mesh(hopperGeo, hopperMat);
+    hopper.position.set(0, 3.5, -1);
+    this.turret.add(hopper);
+    
+    // Hopper lid
+    const lidGeo = new THREE.SphereGeometry(1.5, 16, 16, 0, Math.PI*2, 0, Math.PI/2);
+    const lidMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    const lid = new THREE.Mesh(lidGeo, lidMat);
+    lid.position.set(0, 5, -1);
+    this.turret.add(lid);
+
+    // Scale it down!
+    this.turret.scale.set(0.5, 0.5, 0.5);
+
     // Position the whole cannon assembly
-    this.turret.position.set(0, -5, 48);
+    this.turret.position.set(this.turretX, this.turretY, 48);
     this.scene.add(this.turret);
   }
 
@@ -297,17 +322,19 @@ export class SceneManager {
   }
 
   updateTurretConfig(config) {
-    this.turretConfig = config;
-    if (this.turret) {
-      this.turret.position.set(config.gunX, config.gunY, 48);
-      // Pitch revolves around X (Up/Down)
-      // Yaw revolves around Y (Left/Right)
-      this.turret.rotation.set(
-        THREE.MathUtils.degToRad(config.pitch),
-        THREE.MathUtils.degToRad(-config.yaw), // negative yaw to aim left/right correctly
-        0,
-        'YXZ'
-      );
+    this.turretConfig = { ...this.turretConfig, ...config };
+    // We no longer update pitch/yaw/gunX/gunY from config because they are controlled by mouse/wasd!
+    // But we still save it for power and ax/ay/az formulas.
+    if (this.currentAnalysis) {
+      this.currentAnalysis.config = {
+        ...this.currentAnalysis.config,
+        ...config,
+        gunX: this.turretX,
+        gunY: this.turretY,
+        pitch: this.turretPitch,
+        yaw: this.turretYaw
+      };
+      this.drawTrajectory(this.currentAnalysis);
     }
   }
 
@@ -394,23 +421,40 @@ export class SceneManager {
   }
 
   drawTrajectory(analysis) {
+    this.currentAnalysis = analysis;
     if (this.trajectoryLine) {
       this.scene.remove(this.trajectoryLine);
       this.trajectoryLine.geometry.dispose();
       this.trajectoryLine.material.dispose();
     }
 
-    const config = analysis.config || this.turretConfig || { gunX: 0, gunY: -5, pitch: 0, yaw: 0, power: 50 };
-    const startPoint = new THREE.Vector3(config.gunX, config.gunY, 48); // Turret muzzle dynamic position
+    // Merge UI config with physical turret state
+    const config = {
+      ...(analysis.config || this.turretConfig || { power: 50 }),
+      gunX: this.turretX,
+      gunY: this.turretY,
+      pitch: this.turretPitch,
+      yaw: this.turretYaw
+    };
+    analysis.config = config;
+
+    const startPoint = new THREE.Vector3(config.gunX, config.gunY, 48); 
     const obstacles = this.currentLevel ? this.currentLevel.obstacles : [];
     const points = TrajectorySolver.calculate(analysis, startPoint, -50, obstacles);
 
     const pathCurve = new THREE.CatmullRomCurve3(points);
-    const geometry = new THREE.TubeGeometry(pathCurve, Math.max(20, points.length * 2), 0.5, 8, false);
+    // Reduced tube width to 0.25
+    const geometry = new THREE.TubeGeometry(pathCurve, Math.max(20, points.length * 2), 0.25, 8, false);
     
+    const lastPoint = points[points.length - 1];
+    let hitColor = new THREE.Color(0x00ccff);
+    if (lastPoint.z <= -49) {
+      hitColor = this.getArtworkColor(lastPoint.x, lastPoint.y);
+    }
+
     const material = new THREE.MeshStandardMaterial({
-      color: 0x0044aa, 
-      emissive: 0x0088ff,
+      color: hitColor, 
+      emissive: hitColor,
       emissiveIntensity: 0.8,
       transparent: true,
       opacity: 0.6,

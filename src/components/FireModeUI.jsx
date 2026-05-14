@@ -3,10 +3,6 @@ import { FormulaEngine } from '../game/FormulaEngine';
 
 export function FireModeUI({ onPreview, onFire, isFiring, onConfigChange }) {
   const [config, setConfig] = useState({
-    gunX: 0,
-    gunY: -5,
-    pitch: 0,
-    yaw: 0,
     power: 50,
     ax: '0',
     ay: '-9.8',
@@ -15,7 +11,7 @@ export function FireModeUI({ onPreview, onFire, isFiring, onConfigChange }) {
 
   const [analysis, setAnalysis] = useState(null);
 
-  // Notify parent of live config changes (for moving the turret in real-time)
+  // Notify parent of live config changes
   useEffect(() => {
     if (onConfigChange) {
       onConfigChange(config);
@@ -59,19 +55,11 @@ export function FireModeUI({ onPreview, onFire, isFiring, onConfigChange }) {
     }}>
       <h3 style={{ margin: 0, color: '#00ccff', fontSize: '18px', textTransform: 'uppercase' }}>Physics Engine</h3>
       
+      <div style={{ fontSize: '12px', color: '#00ccff', marginBottom: '-5px' }}>
+        <i>Aim: Mouse | Move: WASD</i>
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-        <label style={{ fontSize: '12px', color: '#aaa' }}>Gun Position X: {config.gunX}</label>
-        <input type="range" min="-45" max="45" value={config.gunX} onChange={e => handleChange('gunX', parseFloat(e.target.value))} />
-        
-        <label style={{ fontSize: '12px', color: '#aaa' }}>Gun Position Y: {config.gunY}</label>
-        <input type="range" min="-45" max="45" value={config.gunY} onChange={e => handleChange('gunY', parseFloat(e.target.value))} />
-
-        <label style={{ fontSize: '12px', color: '#aaa' }}>Pitch (Up/Down): {config.pitch}°</label>
-        <input type="range" min="-80" max="80" value={config.pitch} onChange={e => handleChange('pitch', parseFloat(e.target.value))} />
-
-        <label style={{ fontSize: '12px', color: '#aaa' }}>Yaw (Left/Right): {config.yaw}°</label>
-        <input type="range" min="-80" max="80" value={config.yaw} onChange={e => handleChange('yaw', parseFloat(e.target.value))} />
-
         <label style={{ fontSize: '12px', color: '#aaa' }}>Launch Power: {config.power}</label>
         <input type="range" min="10" max="200" value={config.power} onChange={e => handleChange('power', parseFloat(e.target.value))} />
       </div>
