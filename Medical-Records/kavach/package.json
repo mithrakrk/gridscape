@@ -1,0 +1,30 @@
+﻿{
+  "name": "kavach",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Kavach — Your family's health, protected. WhatsApp-first medical records for Indian caregivers.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "db:push": "cd packages/db && npx prisma db push",
+    "db:migrate": "cd packages/db && npx prisma migrate dev",
+    "db:studio": "cd packages/db && npx prisma studio",
+    "db:generate": "cd packages/db && npx prisma generate"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "prettier": "^3.2.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

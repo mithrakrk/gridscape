@@ -1,0 +1,10 @@
+﻿{
+  "name": "@kavach/auth",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@kavach/db": "*",
+    "bcryptjs": "^2.4.3"
+  }
+}

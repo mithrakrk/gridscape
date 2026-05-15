@@ -1,0 +1,57 @@
+﻿// SYNTHETIC DOCTOR SUMMARY — NOT REAL PHI
+// Example of a generated doctor summary JSON structure.
+
+{
+  "generatedAt": "2024-03-15T10:00:00Z",
+  "patientSnapshot": {
+    "name": "Arjun Mehta (Synthetic)",
+    "age": 66,
+    "bloodGroup": "O+",
+    "weightKg": 72,
+    "allergies": ["Penicillin"]
+  },
+  "activeConditions": [
+    { "diagnosis": "Type 2 Diabetes Mellitus", "diagnosedDate": "2018-06-01" },
+    { "diagnosis": "Essential Hypertension", "diagnosedDate": "2019-02-14" }
+  ],
+  "currentMedications": [
+    { "drug": "Metformin", "dosage": "500mg", "frequency": "Twice daily", "prescribingDoctor": "Dr. Ravi Kumar (Synthetic)" },
+    { "drug": "Amlodipine", "dosage": "5mg", "frequency": "Once daily", "prescribingDoctor": "Dr. Ravi Kumar (Synthetic)" }
+  ],
+  "labTrends": [
+    {
+      "markerName": "HbA1c",
+      "unit": "%",
+      "latestValue": "7.2",
+      "latestDate": "2024-03-15",
+      "previousValue": "7.8",
+      "previousDate": "2023-09-10",
+      "referenceRange": "4.0-5.6%",
+      "trend": "DOWN",
+      "isProvisional": true
+    },
+    {
+      "markerName": "Fasting Glucose",
+      "unit": "mg/dL",
+      "latestValue": "118",
+      "latestDate": "2024-03-15",
+      "previousValue": "132",
+      "previousDate": "2023-09-10",
+      "referenceRange": "70-100",
+      "trend": "DOWN",
+      "isProvisional": true
+    }
+  ],
+  "recentVisits": [
+    { "doctorName": "Dr. Ravi Kumar (Synthetic)", "visitDate": "2024-03-15", "diagnosis": "Diabetes follow-up — HbA1c improving" },
+    { "doctorName": "Dr. Ravi Kumar (Synthetic)", "visitDate": "2023-09-10", "diagnosis": "Quarterly review — medication adjustment" }
+  ],
+  "upcomingPending": {
+    "nextReviewDates": [{ "description": "Quarterly diabetes review", "date": "2024-06-15" }],
+    "pendingTests": ["Lipid panel", "Kidney function (creatinine, eGFR)"]
+  },
+  "portalAccess": {
+    "portalLink": "https://kavach.app/portal/SYNTHETIC_TOKEN_FOR_DEMO_ONLY",
+    "expiresAt": "2024-03-15T18:00:00Z"
+  }
+}

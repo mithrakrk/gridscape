@@ -5,6 +5,9 @@
     },
     {
       "path": "LookingGlass"
+    },
+    {
+      "path": "Medical-Records"
     }
   ],
   "settings": {}

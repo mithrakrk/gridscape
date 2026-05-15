@@ -1,0 +1,171 @@
+﻿// Kavach Prisma Schema
+// All queries scoped within Account -> PatientProfile -> Record.
+// Never assume single patient per account.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id          String    @id @default(cuid())
+  phoneNumber String    @unique
+  email       String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  patients    PatientProfile[]
+  consents    ConsentRecord[]
+  auditEvents AuditEvent[]
+
+  @@index([phoneNumber])
+}
+
+model PatientProfile {
+  id          String    @id @default(cuid())
+  accountId   String
+  account     Account   @relation(fields: [accountId], references: [id])
+  name        String
+  dateOfBirth DateTime?
+  bloodGroup  String?
+  weightKg    Float?
+  allergies   String[]
+  isArchived  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  records      Record[]
+  summaries    SummaryArtifact[]
+  accessTokens AccessToken[]
+
+  @@index([accountId])
+}
+
+enum RecordType {
+  LAB_REPORT
+  PRESCRIPTION
+  CONSULTATION
+  IMAGING
+  DISCHARGE
+  OTHER
+}
+
+enum RecordStatus {
+  PENDING
+  PROCESSING
+  EXTRACTION_FAILED
+  LOW_CONFIDENCE
+  VERIFIED
+}
+
+model Record {
+  id               String        @id @default(cuid())
+  patientId        String
+  patient          PatientProfile @relation(fields: [patientId], references: [id])
+  rawFileUrl       String
+  rawFileKey       String
+  recordType       RecordType    @default(OTHER)
+  recordDate       DateTime?
+  status           RecordStatus  @default(PENDING)
+  confidenceScore  Float?
+  judgeVerified    Boolean       @default(false)
+  manuallyVerified Boolean       @default(false)
+  correctionNote   String?
+  provenance       Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  extractedFields ExtractedField[]
+  auditEvents     AuditEvent[]
+
+  @@index([patientId])
+  @@index([patientId, deletedAt])
+}
+
+model ExtractedField {
+  id              String   @id @default(cuid())
+  recordId        String
+  record          Record   @relation(fields: [recordId], references: [id])
+  fieldName       String
+  rawValue        String
+  normalizedValue String?
+  unit            String?
+  referenceRange  String?
+  confidence      Float
+  isLowConfidence Boolean  @default(false)
+  correctedValue  String?
+  correctedAt     DateTime?
+  correctedBy     String?
+
+  @@index([recordId])
+}
+
+model SummaryArtifact {
+  id          String         @id @default(cuid())
+  patientId   String
+  patient     PatientProfile @relation(fields: [patientId], references: [id])
+  pdfUrl      String
+  pdfKey      String
+  generatedAt DateTime       @default(now())
+  expiresAt   DateTime?
+  summaryJson Json
+  version     Int            @default(1)
+
+  @@index([patientId])
+}
+
+model AccessToken {
+  id          String         @id @default(cuid())
+  patientId   String
+  patient     PatientProfile @relation(fields: [patientId], references: [id])
+  token       String         @unique
+  otpHash     String?
+  otpVerified Boolean        @default(false)
+  otpAttempts Int            @default(0)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  revokedAt   DateTime?
+  ipAddress   String?
+  createdAt   DateTime       @default(now())
+
+  @@index([token])
+  @@index([patientId])
+}
+
+model ConsentRecord {
+  id          String    @id @default(cuid())
+  accountId   String
+  account     Account   @relation(fields: [accountId], references: [id])
+  consentType String
+  givenAt     DateTime  @default(now())
+  withdrawnAt DateTime?
+  ipAddress   String?
+  userAgent   String?
+  consentText String
+  version     String
+
+  @@index([accountId])
+}
+
+model AuditEvent {
+  id        String    @id @default(cuid())
+  accountId String?
+  account   Account?  @relation(fields: [accountId], references: [id])
+  recordId  String?
+  record    Record?   @relation(fields: [recordId], references: [id])
+  eventType String
+  actor     String?
+  metadata  Json?
+  createdAt DateTime  @default(now())
+
+  @@index([accountId])
+  @@index([recordId])
+  @@index([eventType])
+}
