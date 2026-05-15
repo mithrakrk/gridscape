@@ -442,6 +442,9 @@ export class SceneManager {
     // Create a 3D curve from the raw math points.
     // This normalizes the physical distance so the bullet doesn't suddenly "jump" when math spikes.
     const curve = new THREE.CatmullRomCurve3(points);
+    const bulletStart = curve.getPointAt(0);
+    console.log('[BULLET] curve start (progress=0):', bulletStart.x.toFixed(3), bulletStart.y.toFixed(3), bulletStart.z.toFixed(3));
+    console.log('[BULLET] points[0] (raw):', points[0].x.toFixed(3), points[0].y.toFixed(3), points[0].z.toFixed(3));
 
     this.bulletAnim = {
       curve: curve,
@@ -479,11 +482,16 @@ export class SceneManager {
 
     // Calculate exact muzzle position in world space for physics
     this.camera.updateMatrixWorld(true);
-    const startPoint = new THREE.Vector3(0, -1.75, -9.5); // exact barrel tip relative to camera
+    const startPoint = new THREE.Vector3(0, -1.75, -6.5); // exact barrel tip relative to camera (barrel tip local=(0,0.5,-13)*scale0.5 + turretOffset(0,-2,0))
     startPoint.applyMatrix4(this.camera.matrixWorld);
+    console.log('[TRACE] startPoint (world):', startPoint.x.toFixed(3), startPoint.y.toFixed(3), startPoint.z.toFixed(3));
+    console.log('[TRACE] camera.position:', this.camera.position.x.toFixed(3), this.camera.position.y.toFixed(3), this.camera.position.z.toFixed(3));
+    console.log('[TRACE] camera.rotation (deg):', THREE.MathUtils.radToDeg(this.camera.rotation.x).toFixed(1), THREE.MathUtils.radToDeg(this.camera.rotation.y).toFixed(1));
 
     const obstacles = this.currentLevel ? this.currentLevel.obstacles : [];
     const points = TrajectorySolver.calculate(analysis, startPoint, -50, obstacles);
+    console.log('[TRACE] points[0]:', points[0].x.toFixed(3), points[0].y.toFixed(3), points[0].z.toFixed(3));
+    console.log('[TRACE] points[-1]:', points[points.length-1].x.toFixed(3), points[points.length-1].y.toFixed(3), points[points.length-1].z.toFixed(3));
 
     const pathCurve = new THREE.CatmullRomCurve3(points);
     // Reduced tube width to 0.25
