@@ -9,6 +9,7 @@ Current sprint focus: Setting up the web application skeleton and the Three.js b
 - [ ] Refine the visual effects for when a bullet hits an obstacle or wall.
 
 ## In Progress
+- [ ] Production deployment to Vercel (Root Directory fix).
 - [ ] Review UI and code architecture for final MVP polish.
 
 ## Done

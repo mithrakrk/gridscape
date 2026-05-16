@@ -7,6 +7,7 @@
 - `TrajectorySolver` now correctly computes AABB collisions against obstacles, stopping trajectories mid-air.
 - "Level Complete" overlay integrated for transitioning between levels.
 - **Aesthetic Upgrades Complete**: Added Louvre museum glass walls, seamless carpet floor, colored floating blocks, ceiling/floor grids, and paintball bounce physics.
+- **Deployment**: Configured root `vercel.json` and `package.json` to handle the project subdirectory, enabling successful Vercel production builds.
 
 ## Milestones
 - [x] Project Setup & Documentation

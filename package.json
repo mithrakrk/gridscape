@@ -1,0 +1,8 @@
+{
+  "name": "gridscape-monorepo",
+  "private": true,
+  "scripts": {
+    "install": "npm install --prefix Gridscape",
+    "build": "npm run build --prefix Gridscape"
+  }
+}

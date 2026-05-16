@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased]
+## [Unreleased] - 2026-05-16
+### Fixed
+- Resolved Vercel deployment failure by adding root configuration (`vercel.json` and `package.json`) to correctly handle the `Gridscape` project subdirectory.
 ### Added
 - Comprehensive documentation for the "Gridscape" project (`project-brief.md`, `game-design.md`, `math-rules.md`, `level-design.md`).
 - Specific skill definitions for gameplay systems and level design.
