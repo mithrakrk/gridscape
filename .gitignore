@@ -13,6 +13,8 @@ dist-ssr
 *.local
 
 # Editor directories and files
+# Local backups
+backups/
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -36,3 +38,6 @@ knowledge/
 mcp_config.json
 scratch/
 user_settings.pb
+
+# Local backups
+backups/
