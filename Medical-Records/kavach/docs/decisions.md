@@ -1,95 +1,55 @@
-# Decisions — Kavach
+# Decisions — Medical Records
 
-> Architectural and product decisions log (ADR format). Add entries in reverse chronological order.
-> Last updated: 2026-05-16
-
----
-
-## 2026-05-16 — Milestone 1B: Caregiver Auth
-
-### DEC-018: iron-session for caregiver session management
-- **Decision:** Use `iron-session` (encrypted cookie, stateless) for caregiver sessions.
-- **Rationale:** Stateless — no Redis session store needed for auth (Redis reserved for job queue). Encrypted httpOnly cookie with SameSite=Strict. Works in Next.js Edge middleware without polyfills. Session stores only `accountId` + `phoneNumber` (no PHI).
-- **Consequences:** Session secret must be ≥32 chars; stored in AWS Secrets Manager in production. 7-day cookie maxAge with explicit logout endpoint.
-
-### DEC-019: Separate CaregiverOtp model (not reusing AccessToken)
-- **Decision:** Add a dedicated `CaregiverOtp` table (one row per account, upserted on each request) rather than reusing the `AccessToken` model.
-- **Rationale:** `AccessToken` is scoped to a patient (for doctor portal — Milestone 3). Caregiver OTP is scoped to an account. Mixing concerns would require nullable foreign keys and complex query logic. Separate table is cleaner and easier to reason about.
-- **Consequences:** Schema now has 9 models. `CaregiverOtp` row is upserted on every OTP request (one active OTP per account at a time), hash cleared after verification.
-
-### DEC-020: Dev OTP returned in API response (non-production only)
-- **Decision:** In `NODE_ENV !== production`, the `/api/auth/request-otp` response includes `_devOtp` (the plaintext OTP). In production this field is never returned.
-- **Rationale:** Enables local testing and CI without an SMS provider. The UI shows a green banner with the OTP in dev. This field is never populated in production builds.
-- **Consequences:** All tests must run with `NODE_ENV=test`. CI must ensure NODE_ENV is set correctly. Code review gate: `_devOtp` must never appear in production logs or responses.
-
----
-
-## 2026-05-16 — Workspace Scaffold
-
-### DEC-013: Monorepo structure with Turborepo
-- **Decision:** Use a Turborepo-managed monorepo with `apps/` and `packages/` directories.
-- **Rationale:** Multiple apps (web PWA, worker) share packages (db, ai, auth, pdf, compliance). Turborepo provides caching and task orchestration without overhead. Aligns with Next.js recommendations.
-- **Consequences:** Requires Node 20+. All package.json workspace definitions must be kept in sync.
-
-### DEC-014: Next.js for both caregiver PWA and doctor portal
-- **Decision:** Single Next.js app handles both `/(caregiver)` routes and `/portal` routes, using route groups for separation.
-- **Rationale:** Reduces operational complexity. Portal pages are statically rendered with server-side OTP verification. PWA features (manifest, service worker) applied only to caregiver routes.
-- **Consequences:** Doctor portal and caregiver app share the same deployment. Clear route-group separation prevents accidental data access.
-
-### DEC-015: BullMQ (Redis) for background job queue
-- **Decision:** Use BullMQ with Redis for ingestion and summary generation background jobs.
-- **Rationale:** OCR and LLM calls are too slow for synchronous HTTP handling. BullMQ provides retry logic, job status tracking, and queue visibility. Redis is already needed for conversation state (WhatsApp bot).
-- **Consequences:** Requires Redis in all environments (dev: local Redis or Docker; prod: ElastiCache Mumbai). Jobs are stubbed for MVP; queue ready for production.
-
-### DEC-016: Prisma ORM with PostgreSQL
-- **Decision:** Use Prisma ORM over raw SQL or alternatives.
-- **Rationale:** Type-safe DB client generation, migration system, and schema-as-code align with the project's TypeScript-first approach. pgvector extension supported via raw SQL in Prisma migrations.
-- **Consequences:** All schema changes go through Prisma migration files. DB client generated from schema — never modify generated client directly.
-
-### DEC-017: Puppeteer for PDF generation
-- **Decision:** Use Puppeteer (headless Chrome) to render HTML templates as PDFs.
-- **Rationale:** HTML/CSS gives full design control for the doctor summary layout. More flexible than library-based PDF generation. Puppeteer is well-supported in Node.js environments.
-- **Consequences:** Puppeteer adds ~100MB to Lambda/container size. May require Lambda layer or ECS container for PDF generation in production. For MVP, run in worker process.
+> Architectural and product decisions log. Add entries in reverse chronological order.
 
 ---
 
 ## 2026-05-16 — Initial Product Definition (grill-me session)
 
-### DEC-001 through DEC-012
-See `Medical-Records/docs/decisions.md` for the full set of product decisions from the grill-me session. These are reproduced below for monorepo completeness.
+### DEC-001: Primary user is the caregiver, not the patient
+- **Decision:** Target the 25–40 year old family member/caregiver who manages records on behalf of the 40–65 year old patient.
+- **Rationale:** In the Indian context, family handles medical admin. The patient is the beneficiary, not the operator. Designing for the caregiver determines UX, language level, and onboarding flow.
 
-### DEC-001: Primary user is the caregiver
-- Caregiver (25–40) is the operator; patient (40–65+) is the beneficiary. All UX designed for caregiver.
-
-### DEC-002: Primary MVP use case is routine doctor's visit
-- Most frequent touchpoint; best for habit formation and retention.
+### DEC-002: Primary MVP use case is the routine doctor's visit
+- **Decision:** Anchor the MVP around the routine doctor's visit scenario.
+- **Rationale:** Most frequent touchpoint; best for building habit and retention. Emergency is the highest-stakes scenario but harder to solve and validate at MVP stage.
 
 ### DEC-003: Doctor handoff via WhatsApp PDF + web portal drill-down
-- Doctors already live on WhatsApp. Zero new behaviour required.
+- **Decision:** Caregiver shares a one-page PDF summary via WhatsApp. PDF contains a link/QR to a web portal for drill-down into specific or all reports.
+- **Rationale:** Doctors already live on WhatsApp. Zero new behaviour required. Portal allows doctor to request source documents without requiring app installation.
 
 ### DEC-004: Portal access via OTP (Phase 2: push-confirm)
-- Keeps patient/caregiver in control of data access. Satisfies DPDP consent requirements.
+- **Decision:** Doctor opens time-limited portal link; OTP is sent to caregiver's phone. Phase 2 upgrades to a push-confirm button (like Google Auth).
+- **Rationale:** Keeps patient/caregiver in control of data access. Satisfies DPDP consent requirements. 15-second friction acceptable in clinical setting.
 
 ### DEC-005: WhatsApp bot as primary ingestion channel
-- Caregivers already forward medical reports on WhatsApp. Redirecting existing habit.
+- **Decision:** Caregiver forwards photos/PDFs to a WhatsApp bot. Camera scan is Phase 2.
+- **Rationale:** Caregivers already forward medical reports on WhatsApp. Redirecting this existing habit is the path of least resistance.
 
 ### DEC-006: Hybrid storage — raw file + AI extraction
-- Raw file is the legal source of truth. Structured extraction enables smart summaries.
+- **Decision:** Always preserve the raw document. Attempt structured extraction (OCR → LLM) best-effort. Use LLM-as-judge to validate accuracy. Flag low-confidence extractions for caregiver correction.
+- **Rationale:** Raw file is the legal source of truth for medical data. Structured extraction is what makes smart summaries possible. LLM-as-judge is critical for medical accuracy.
 
 ### DEC-007: RAG for summary generation, LLM-as-judge for extraction validation
-- RAG is correct pattern. LLM-as-judge catches hallucinations before they reach the doctor summary.
+- **Decision:** Use RAG to retrieve relevant patient records when generating the doctor summary. Use a separate LLM call as judge to validate extraction output.
+- **Rationale:** RAG is the right pattern for retrieval-augmented summary generation. LLM-as-judge catches hallucinations and low-confidence extractions before they reach the doctor summary.
 
 ### DEC-008: Multi-patient support from day one
-- Indian caregivers commonly manage both parents. Retrofitting later is expensive.
+- **Decision:** Data model supports Account → [Patient Profiles] → [Records] from v1.
+- **Rationale:** Indian caregivers commonly manage both parents (and sometimes in-laws). Retrofitting multi-patient support later is expensive. UI impact is minimal (patient switcher).
 
 ### DEC-009: PWA for caregiver management interface
-- No app store friction. Works on Android and iOS. Linked directly from WhatsApp bot.
+- **Decision:** Build a Progressive Web App for the caregiver management UI. Native app deferred until retention data justifies it.
+- **Rationale:** No app store friction. Works on Android and iOS. Can be linked directly from the WhatsApp bot. One codebase.
 
 ### DEC-010: AWS Mumbai, DPDP Act 2023 compliant
-- Health data of Indian citizens must be stored in India. Trust is a core product differentiator.
+- **Decision:** All data (files, structured records) stored in AWS ap-south-1. Explicit consent flows. Right to erasure built into v1.
+- **Rationale:** Health data of Indian citizens must be stored in India. DPDP Act 2023 is in force. Trust is a core product differentiator.
 
 ### DEC-011: Freemium + tiered consumer plans + pharmacy B2B
-- Indian consumers are price-sensitive. Freemium drives adoption; Family plan monetises power users.
+- **Decision:** Free tier (1 patient, 30 docs/month), Family plan (₹149/month), Premium plan (TBD). Pharmacy referral revenue as a separate B2B stream.
+- **Rationale:** Indian consumers are price-sensitive. Freemium drives adoption; Family plan monetises power users (multi-patient caregivers). Pharmacy referrals are non-intrusive revenue that aligns with user intent.
 
 ### DEC-012: GTM via Apollo/KIMS/dermatologist doctor network
-- Doctor referral is the highest-trust acquisition channel for a health data product.
+- **Decision:** Launch through existing doctor relationships at Apollo, KIMS, and dermatologist network. Secondary: caregiver WhatsApp communities. Tertiary: pharmacy referrals.
+- **Rationale:** Doctor referral is the highest-trust acquisition channel for a health data product. Existing relationships accelerate time-to-first-user significantly.

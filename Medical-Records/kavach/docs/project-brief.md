@@ -1,7 +1,8 @@
-﻿# Project Brief — Kavach
+# Kavach — Project Brief
 
 > *Your family's health, protected.*
-> Last updated: 2026-05-16
+> Generated from grill-me session — 2026-05-16
+>
 > **Founders:** Kavya (idea) · Mithra (build)
 > **Name origin:** Kavach (कवच) means shield/armour in Sanskrit. Shares the "Kav" root with Kavya's name.
 
@@ -13,7 +14,7 @@ People in the age group 40–65+ in India face significant problems carrying and
 
 ## Needs Statements
 
-Indian citizens between the ages 40–65 have large volumes of medical records they need to access repeatedly when:
+Indian citizens between the ages 40–65 have large volumes of medical records that they need to repeatedly access when:
 - Visiting their regular doctor
 - Buying medicines
 - Consulting a new doctor
@@ -21,53 +22,73 @@ Indian citizens between the ages 40–65 have large volumes of medical records t
 
 ---
 
-## Users
+## Product Definition
 
+### Users
 | Role | Description |
 |---|---|
-| **Primary user** | Caregiver (25–40) managing records on behalf of a family member |
-| **Beneficiary** | Patient (40–65+) receiving care |
-| **Consumer** | Doctor — reads the summary, drills into portal if needed |
+| **Primary user** | Caregiver (25–40 years old) managing records on behalf of a family member |
+| **Beneficiary** | Patient (40–65 years old) receiving care |
 
-## Primary Use Case (MVP)
-
-**Routine doctor's visit** — the caregiver organises and shares a clean medical summary with the doctor before or during an appointment.
+### Primary Use Case (MVP)
+**Routine doctor's visit** — the caregiver organises and shares a clean medical summary with the doctor before/during an appointment.
 
 ---
 
-## Core Thesis to Validate
+## Core Decisions
 
-> *A caregiver, introduced to the product by a trusted doctor, will use a WhatsApp bot to organise medical records and proactively share a one-page summary before the next appointment.*
+| Decision | Resolution |
+|---|---|
+| **Primary use case** | Routine doctor's visit |
+| **Doctor handoff** | WhatsApp-shared one-page PDF summary + web portal for drill-down into specific or all reports |
+| **Portal access control** | OTP sent to caregiver's phone (Phase 2: push-confirm button like Google Auth) |
+| **Record ingestion** | WhatsApp bot (primary); camera scan (Phase 2) |
+| **AI architecture** | OCR → LLM extraction → LLM-as-judge (accuracy validation) → RAG for summary generation |
+| **Human-in-the-loop** | WhatsApp notification for low-confidence extractions; caregiver can type the answer or re-upload a clearer photo |
+| **Data model** | `Account → [Patient Profiles] → [Records]` (multi-patient from day one) |
+| **Platform** | PWA for caregiver management + WhatsApp for ingestion and sharing |
+| **Data & compliance** | AWS Mumbai (ap-south-1), DPDP Act 2023 compliant, explicit consent, right to erasure |
+| **Business model** | Freemium + Family + Premium tiers; pharmacy referral revenue (later phase) |
+| **GTM wedge** | Apollo/KIMS/dermatologist doctor network → caregiver WhatsApp communities → pharmacy referrals |
 
 ---
 
-## Value Proposition
+## One-Page Doctor Summary — Contents
 
-For the caregiver:
-- Stop carrying folders of paper reports to every appointment
-- Never lose an important document again
-- Walk into every appointment with a complete, organised history ready
-- Share the doctor summary in one WhatsApp message
+| # | Section | Details |
+|---|---|---|
+| 1 | **Patient snapshot** | Name, age, blood group, weight, known allergies |
+| 2 | **Active conditions** | Diagnosis name + date |
+| 3 | **Current medications** | Drug, dosage, frequency, prescribing doctor |
+| 4 | **Lab trends** | Primary markers + condition-linked markers (e.g., diabetic → HbA1c, fasting glucose, eGFR) with ↑↓ indicators. Configurable based on HCP research. |
+| 5 | **Recent visits** | Last 3 consultations — doctor, date, diagnosis |
+| 6 | **Upcoming/pending** | Next review dates, pending tests |
+| 7 | **Portal access** | QR code + time-limited link for full record drill-down |
 
-For the doctor:
-- Receive a clean, structured one-page summary before or during consultation
-- Drill into source documents if needed without requesting physical copies
-- Reduce time wasted reconstructing patient history
+---
+
+## Business Model
+
+| Tier | Price | Features |
+|---|---|---|
+| **Free** | ₹0 | 1 patient profile, 30 doc uploads/month, basic summary |
+| **Family** | ₹149/month or ₹999/year | Unlimited patients, unlimited storage, doctor web portal |
+| **Premium** | TBD | AI trend analysis, medication reminders, priority extraction |
+| **Pharmacy (B2B)** | Referral/affiliate | Activated prescription leads sent to pharmacy partners |
 
 ---
 
 ## v1 Scope
 
-### In Scope
+### ✅ In Scope
 - WhatsApp bot ingestion (photo + PDF)
 - AI extraction + LLM-as-judge + caregiver correction flow
 - Multi-patient profile management (PWA)
 - One-page doctor summary PDF (WhatsApp shareable)
 - Web portal with OTP access for doctors
 - Free tier only (no payments in v1)
-- Core auditability and document traceability
 
-### Out of Scope (Later Phases)
+### ❌ Out of Scope (Later Phases)
 - Camera scan ingestion
 - ABHA / Ayushman Bharat Digital Mission integration
 - Medication reminders
@@ -75,33 +96,9 @@ For the doctor:
 - Paid plan billing
 - Pharmacy partnerships
 - Push-confirm auth
-- Multilingual rollout beyond scaffold readiness
 
 ---
 
-## Business Model (Post-v1)
+## Core Thesis to Validate
 
-| Tier | Price | Features |
-|---|---|---|
-| **Free** | ₹0 | 1 patient profile, 30 doc uploads/month, basic summary |
-| **Family** | ₹149/month or ₹999/year | Unlimited patients, unlimited storage, doctor web portal |
-| **Premium** | TBD | AI trend analysis, medication reminders, priority extraction |
-| **Pharmacy (B2B)** | Referral/affiliate | Activated prescription leads to pharmacy partners |
-
----
-
-## GTM Wedge
-
-1. Apollo/KIMS/dermatologist doctor network (highest-trust acquisition channel)
-2. Caregiver WhatsApp communities (organic seeding)
-3. Pharmacy referrals (later phase)
-
----
-
-## Non-Goals (v1)
-
-- Not a hospital management system
-- Not an EMR/EHR
-- Not a telemedicine platform
-- Not a medication reminder app
-- Not a billing or insurance claims product
+> *A caregiver, introduced to the product by a trusted doctor, will use a WhatsApp bot to organise medical records and proactively share a one-page summary before the next appointment.*
