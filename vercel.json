@@ -1,7 +1,5 @@
 {
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "outputDirectory": "dist",
-  "rootDirectory": "Gridscape"
+  "buildCommand": "npm run build --prefix Gridscape",
+  "installCommand": "npm install --prefix Gridscape",
+  "outputDirectory": "Gridscape/dist"
 }
