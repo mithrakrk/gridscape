@@ -1,4 +1,4 @@
-﻿// Kavach Prisma Schema
+// Kavach Prisma Schema
 // All queries scoped within Account -> PatientProfile -> Record.
 // Never assume single patient per account.
 
@@ -19,9 +19,10 @@ model Account {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  patients    PatientProfile[]
-  consents    ConsentRecord[]
-  auditEvents AuditEvent[]
+  patients      PatientProfile[]
+  consents      ConsentRecord[]
+  auditEvents   AuditEvent[]
+  caregiverOtp  CaregiverOtp?
 
   @@index([phoneNumber])
 }
@@ -166,6 +167,22 @@ model AuditEvent {
   createdAt DateTime  @default(now())
 
   @@index([accountId])
-  @@index([recordId])
   @@index([eventType])
 }
+
+// One active OTP per caregiver account at a time.
+// Upserted on each request-otp call. Hash cleared after use.
+model CaregiverOtp {
+  id         String    @id @default(cuid())
+  accountId  String    @unique
+  account    Account   @relation(fields: [accountId], references: [id])
+  otpHash    String    // bcrypt hash — cleared after verification
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([accountId])
+}
+

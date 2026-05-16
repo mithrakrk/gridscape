@@ -1,4 +1,4 @@
-﻿# Tasks — Kavach
+# Tasks — Kavach
 
 > Last updated: 2026-05-16
 
@@ -17,15 +17,35 @@
 - [x] Create synthetic mock data fixtures
 - [x] Create env example files
 
-### 🔲 Next: Implementation Foundation
-- [ ] Implement full Prisma schema (packages/db/prisma/schema.prisma)
-- [ ] Set up local PostgreSQL for development
-- [ ] Generate Prisma client and verify schema
-- [ ] Implement caregiver OTP auth flow (packages/auth + apps/web/app/api/auth)
-- [ ] Implement session middleware for caregiver routes
-- [ ] Create patient CRUD API endpoints (apps/web/app/api/patients)
-- [ ] Create patient list UI with patient switcher (apps/web/app/(caregiver)/patients)
-- [ ] Create patient detail page (apps/web/app/(caregiver)/patients/[id])
+### ✅ Implementation Foundation (Milestone 1A + 1B)
+- [x] Implement full Prisma schema — complete, matches data-model.md; `CaregiverOtp` model added
+- [x] Set up local PostgreSQL for development — docker-compose.yml + .env.local provided
+- [x] Generate Prisma client and verify schema — `@prisma/client` v5.22.0; regenerated for 1B
+- [x] Add schema-scoping unit tests — tests/unit/schema-invariants.test.ts (11 tests)
+- [x] Implement caregiver OTP auth (`packages/auth/src/index.ts`) — requestCaregiverOtp, verifyCaregiverOtp, normalisePhone, hashOtp, compareOtp
+- [x] iron-session config (`apps/web/lib/session.ts`) — KavachSession type, isAuthenticated guard
+- [x] API routes: `/api/auth/request-otp`, `/api/auth/verify-otp`, `/api/auth/logout`
+- [x] Next.js Edge middleware (`apps/web/middleware.ts`) — guards caregiver routes, injects x-kavach-account-id
+- [x] Auth page wired to real API endpoints
+- [x] Auth tests — 15 unit tests (caregiver-auth.test.ts) + 17 flow tests (auth-flow.test.ts); 73 total
+
+### ✅ Milestone 1C — Patient Management
+- [x] `GET /api/patients` — account-scoped list with record counts
+- [x] `POST /api/patients` — create with validation + PATIENT_CREATED audit event
+- [x] `GET /api/patients/[id]` — detail + records (account-scoped, 404 on mismatch)
+- [x] `PATCH /api/patients/[id]` — partial update + PATIENT_UPDATED audit event
+- [x] `DELETE /api/patients/[id]` — soft-delete + PATIENT_DELETED audit event
+- [x] `apps/web/lib/get-session-account.ts` — server-side session helper for Server Components
+- [x] `/patients` page — live data, inline Add Patient form, delete
+- [x] `/patients/[id]` page — snapshot, inline edit, records list with status badges
+- [x] 24 patient API tests; 92 total tests passing
+
+### ✅ Milestone 1D — Dashboard & Record Verification
+- [x] Wire dashboard to real patient data (patient switcher, record counts)
+- [x] Record detail page (`/patients/[id]/records/[recordId]`) with extracted fields
+- [x] Manual correction flow for low-confidence fields (PATCH extracted field)
+- [x] Add API route `PATCH /api/records/[id]/fields/[fieldId]`
+- [x] 16 record/field API tests; 108 total tests passing
 
 ---
 

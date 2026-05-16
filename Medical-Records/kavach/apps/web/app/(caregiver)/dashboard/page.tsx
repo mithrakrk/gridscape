@@ -1,63 +1,81 @@
-﻿// Dashboard — Caregiver landing page after login
-// Shows patient switcher and record counts
+/**
+ * /dashboard — Caregiver landing page.
+ * Server Component: fetches patients with record counts directly from DB.
+ * Redirects to /auth if not authenticated.
+ */
 
-export default function DashboardPage() {
+import { redirect } from "next/navigation";
+import { prisma } from "@kavach/db";
+import { getSessionAccount } from "@/lib/get-session-account";
+import DashboardClient from "./DashboardClient";
+
+export const metadata = {
+  title: "Dashboard — Kavach",
+  description: "Manage your family's health records",
+};
+
+export default async function DashboardPage() {
+  const accountId = await getSessionAccount();
+  if (!accountId) redirect("/auth?next=/dashboard");
+
+  const patients = await prisma.patientProfile.findMany({
+    where: { accountId, deletedAt: null, isArchived: false },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      dateOfBirth: true,
+      bloodGroup: true,
+      _count: {
+        select: {
+          records: { where: { deletedAt: null } },
+        },
+      },
+    },
+  });
+
+  // Recent records across all patients (last 5)
+  const recentRecords = await prisma.record.findMany({
+    where: {
+      deletedAt: null,
+      patient: { accountId, deletedAt: null },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      id: true,
+      recordType: true,
+      recordDate: true,
+      status: true,
+      patientId: true,
+      patient: { select: { name: true } },
+    },
+  });
+
+  const serialisedPatients = patients.map((p) => {
+    const dob = p.dateOfBirth;
+    const age = dob
+      ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : null;
+    return {
+      id: p.id,
+      name: p.name,
+      age,
+      bloodGroup: p.bloodGroup,
+      recordCount: p._count.records,
+    };
+  });
+
+  const serialisedRecords = recentRecords.map((r) => ({
+    id: r.id,
+    recordType: r.recordType,
+    recordDate: r.recordDate ? r.recordDate.toISOString().split("T")[0] : null,
+    status: r.status,
+    patientId: r.patientId,
+    patientName: r.patient.name,
+  }));
+
   return (
-    <div style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
-      <header style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Dashboard</h1>
-        <p style={{ color: "#94a3b8" }}>Manage your family's health records</p>
-      </header>
-
-      {/* Patient Switcher — multi-patient is first-class */}
-      <section style={{ marginBottom: "32px" }}>
-        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "12px" }}>Patients</h2>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          {/* TODO: Render real patients from API */}
-          <PatientCard name="Add your first patient" empty />
-        </div>
-      </section>
-
-      {/* Quick actions */}
-      <section>
-        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "12px" }}>Quick Actions</h2>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <ActionCard label="Add Patient" href="/patients/new" />
-          <ActionCard label="View Records" href="/records" />
-          <ActionCard label="Generate Summary" href="/summaries" />
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function PatientCard({ name, empty }: { name: string; empty?: boolean }) {
-  return (
-    <div style={{
-      border: empty ? "2px dashed #334155" : "1px solid #334155",
-      borderRadius: "8px",
-      padding: "16px 20px",
-      minWidth: "160px",
-      background: "#1a1a2e",
-      cursor: "pointer",
-    }}>
-      <p style={{ fontWeight: 600 }}>{name}</p>
-    </div>
-  );
-}
-
-function ActionCard({ label, href }: { label: string; href: string }) {
-  return (
-    <a href={href} style={{
-      background: "#7c3aed",
-      color: "white",
-      padding: "12px 20px",
-      borderRadius: "8px",
-      textDecoration: "none",
-      fontWeight: 600,
-      fontSize: "0.9rem",
-    }}>
-      {label}
-    </a>
+    <DashboardClient patients={serialisedPatients} recentRecords={serialisedRecords} />
   );
 }
